@@ -1,0 +1,29 @@
+EXEMPLO — OS MESMOS PINGUINS, DUAS LEITURAS
+
+Para assistir: abra pinguins_exemplo.mp4 ou www/pinguins.gif.
+
+Para abrir o Shiny:
+1. Extraia todo o ZIP em uma pasta.
+2. Abra o projeto Exemplo-Pinguins-Desafio3.Rproj no RStudio.
+3. No console do R, execute:
+   source("iniciar.R", encoding = "UTF-8")
+
+A primeira execução prepara os pacotes em .biblioteca, dentro desta pasta, e pode precisar de internet. O GIF já está incluído. Depois de instalados os pacotes, os dados, imagens e dependências do aplicativo são locais.
+
+Para refazer a animação:
+   source("gerar_animacao.R", encoding = "UTF-8")
+
+O exemplo mostra comprimento e profundidade do bico. São usados 342 dos 344 registros, excluindo somente dois sem as medidas necessárias. A correlação geral é negativa; as três correlações por espécie são positivas. Os pontos não mudam de posição e os eixos são mantidos.
+
+A animação foi produzida pelo gganimate e incorporada ao Shiny como GIF. A aba de exploração permite comparar os ajustes sem esperar a animação. Não são simuladas alterações nas medidas nem uma evolução temporal.
+
+O MP4 é somente uma prévia da animação, não a apresentação final do trabalho. O enunciado pede um vídeo mostrando o Shiny e os códigos.
+
+Código principal: app.R, R/modelo.R e R/graficos.R.
+Geração da animação: gerar_animacao.R.
+Dados e origem: dados/pinguins.csv e dados/FONTE.txt.
+Resultados dos testes: qa/RESULTADOS.txt.
+
+Os testes R foram executados em R 4.5.2 no Windows. Há avisos de pacotes compilados com R 4.5.3; os testes e a renderização terminaram com sucesso. A biblioteca local de pacotes não acompanha o ZIP por ser grande e específica da máquina.
+
+Nenhum commit, push ou PR foi feito. Este é um protótipo para revisão.

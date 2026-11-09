@@ -1,0 +1,15 @@
+Origem: datasets::penguins, distribuído com o R 4.5.2.
+Cópia extraída diretamente do conjunto instalado, sem simular ou substituir observações.
+344 registros e 8 variáveis. O aplicativo preserva a cópia completa e filtra apenas as linhas sem espécie, comprimento ou profundidade do bico para a análise.
+
+Medições de pinguins nas proximidades da estação Palmer, Antártida, entre 2007 e 2009.
+Dados de K. B. Gorman e Palmer Station Antarctica LTER.
+Referência científica: Gorman, Williams e Fraser (2014), Ecological Sexual Dimorphism and Environmental Variability within a Community of Antarctic Penguins (Genus Pygoscelis), PLoS ONE.
+
+Documentação do R:
+https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/penguins.html
+
+Recursos e atribuição da coleção Palmer Penguins:
+https://allisonhorst.github.io/palmerpenguins/
+
+Licença dos dados: CC0, conforme a documentação de palmerpenguins.

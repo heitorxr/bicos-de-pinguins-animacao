@@ -1,0 +1,7 @@
+.biblioteca/
+.Rhistory
+.RData
+.Ruserdata
+.Rproj.user/
+qa/
+*.zip
