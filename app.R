@@ -2,7 +2,7 @@ if (dir.exists(".biblioteca")) .libPaths(c(normalizePath(".biblioteca"), .libPat
 library(shiny)
 source("R/modelo.R", encoding = "UTF-8")
 source("R/graficos.R", encoding = "UTF-8")
-modelo <- preparar_dados(read.csv("dados/pinguins.csv", stringsAsFactors = FALSE))
+modelo <- preparar_dados(ler_pinguins())
 
 ui <- fluidPage(
   tags$head(
@@ -96,7 +96,7 @@ server <- function(input, output, session) {
   output$grafico_transformacao <- renderPlot({
     grafico <- criar_grafico_transformacao(modelo, progresso_atual())
     # O rotulo fica em HTML responsivo para nao cortar texto no celular.
-    grafico$layers <- Filter(function(camada) !inherits(camada$geom, "GeomText"), grafico$layers)
+    grafico$layers <- purrr::discard(grafico$layers, function(camada) inherits(camada$geom, "GeomText"))
     grafico + ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
   }, res = 110)
@@ -104,17 +104,17 @@ server <- function(input, output, session) {
     if (identical(input$modo, "especies")) {
       modelo$por_especie
     } else {
-      data.frame(especie = "Todos", n = nrow(modelo$dados), r = modelo$r_geral)
+      tibble::tibble(especie = "Todos", n = nrow(modelo$dados), r = modelo$r_geral)
     }
   })
   output$metricas <- renderUI({
     resumo <- resumo_ativo()
-    tags$div(class = "metricas", lapply(seq_len(nrow(resumo)), function(i) {
-      grupo <- resumo$especie[[i]]
-      tags$div(class = "metrica", style = paste0("--cor:", cores_pinguins[[grupo]]),
-        tags$span(class = "nome-grupo", nomes_pinguins[[grupo]]),
-        tags$strong(paste0("r = ", formatC(resumo$r[[i]], format = "f", digits = 3, decimal.mark = ","))),
-        tags$span(class = "amostra", paste(resumo$n[[i]], "observações · Pearson"))
+    # pmap cria um cartão para cada linha do resumo, usando seus nomes de coluna.
+    tags$div(class = "metricas", purrr::pmap(resumo, function(especie, n, r) {
+      tags$div(class = "metrica", style = paste0("--cor:", cores_pinguins[[especie]]),
+        tags$span(class = "nome-grupo", nomes_pinguins[[especie]]),
+        tags$strong(paste0("r = ", formatC(r, format = "f", digits = 3, decimal.mark = ","))),
+        tags$span(class = "amostra", paste(n, "observações · Pearson"))
       )
     }))
   })

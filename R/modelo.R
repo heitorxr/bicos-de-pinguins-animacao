@@ -1,15 +1,28 @@
+# Lê a cópia local, mantendo as unidades e os tipos originais das medidas.
+ler_pinguins <- function(arquivo = "dados/pinguins.csv") {
+  readr::read_csv(arquivo, show_col_types = FALSE, col_types = readr::cols(
+    species = readr::col_character(), island = readr::col_character(),
+    bill_len = readr::col_double(), bill_dep = readr::col_double(),
+    flipper_len = readr::col_integer(), body_mass = readr::col_integer(),
+    sex = readr::col_character(), year = readr::col_integer()
+  )) |> as.data.frame()
+}
+
 preparar_dados <- function(dados) {
-  usados <- complete.cases(dados[, c("species", "bill_len", "bill_dep")])
-  limpos <- dados[usados, , drop = FALSE]
-  limpos$species <- factor(limpos$species, levels = c("Adelie", "Chinstrap", "Gentoo"))
-  limpos$id <- which(usados)
-  por_especie <- do.call(rbind, lapply(levels(limpos$species), function(especie) {
-    parte <- limpos[limpos$species == especie, , drop = FALSE]
-    data.frame(especie = especie, n = nrow(parte),
-               r = cor(parte$bill_len, parte$bill_dep))
-  }))
-  rownames(por_especie) <- NULL
-  list(dados = limpos, excluidos = sum(!usados),
-       r_geral = cor(limpos$bill_len, limpos$bill_dep),
-       por_especie = por_especie)
+  # Criar o identificador antes da exclusão preserva a origem de cada ponto.
+  limpos <- dados |>
+    dplyr::mutate(id = dplyr::row_number()) |>
+    tidyr::drop_na(species, bill_len, bill_dep) |>
+    dplyr::mutate(species = factor(species, levels = c("Adelie", "Chinstrap", "Gentoo"))) |>
+    as.data.frame()
+
+  # Correlação e contagem são calculadas separadamente dentro de cada espécie.
+  por_especie <- limpos |>
+    dplyr::group_by(species) |>
+    dplyr::summarise(n = dplyr::n(), r = cor(bill_len, bill_dep), .groups = "drop") |>
+    dplyr::transmute(especie = as.character(species), n, r) |>
+    as.data.frame()
+
+  list(dados = limpos, excluidos = nrow(dados) - nrow(limpos),
+       r_geral = cor(limpos$bill_len, limpos$bill_dep), por_especie = por_especie)
 }
