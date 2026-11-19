@@ -79,11 +79,8 @@ montar_transformacao <- function(modelo, progresso) {
   y_geral <- as.numeric(predict(geral, newdata = data.frame(bill_len = x_geral)))
   angulo_inicial <- atan(coef(geral)[[2]])
   comprimento_inicial <- diff(faixa) * sqrt(1 + coef(geral)[[2]]^2) / 3
-  # Primeiro abre pequenos espaços entre os três terços, sem mudar seu tamanho.
-  dividir <- min(progresso / 0.18, 1)
-  dividir <- 3 * dividir^2 - 2 * dividir^3
-  # Depois da divisão, o mesmo peso suave controla giro, tamanho, posição e cor.
-  mover <- max((progresso - 0.18) / 0.82, 0)
+  # As três partes começam coladas. O movimento cria a separação, sem afastamento prévio.
+  mover <- progresso
   mover <- 3 * mover^2 - 2 * mover^3
   grupos <- levels(dados$species)
   centros <- purrr::map_dbl(grupos, function(grupo) {
@@ -105,7 +102,7 @@ montar_transformacao <- function(modelo, progresso) {
     x_final <- range(parte$bill_len)
     y_final <- as.numeric(predict(ajuste, newdata = data.frame(bill_len = x_final)))
     indice <- match(grupo, ordem)
-    centro_x <- faixa[1] + (indice - 0.5) * diff(faixa) / 3 + (indice - 2) * diff(faixa) * 0.03 * dividir
+    centro_x <- faixa[1] + (indice - 0.5) * diff(faixa) / 3
     centro_y <- as.numeric(predict(geral, newdata = data.frame(bill_len = centro_x)))
     # Ângulo, comprimento, posição e cor usam exatamente o mesmo progresso.
     angulo <- (1 - mover) * angulo_inicial + mover * atan2(diff(y_final), diff(x_final))
@@ -135,14 +132,12 @@ montar_transformacao <- function(modelo, progresso) {
       formatC(modelo$por_especie$r, digits = 3, format = "f", flag = "+", decimal.mark = ","),
       collapse = "  |  "
     ))
-  } else if (progresso <= 0.18) {
-    "DIVISÃO: três segmentos iguais, ainda com a mesma inclinação"
   } else {
     "TRANSIÇÃO VISUAL: cor, ângulo e tamanho mudam juntos"
   }
   list(pontos = pontos, ramos = ramos, referencia = referencia,
        alpha_ramos = 1, alpha_geral = 0, sincronia = mover,
-       etapa = if (progresso <= 0.18) "divisao" else "transformacao",
+       etapa = if (progresso == 0) "unida" else "transformacao",
        intermediario = intermediario, rotulo = rotulo)
 }
 
@@ -179,8 +174,7 @@ criar_grafico_transformacao <- function(modelo, progresso) {
 
 montar_animacao <- function(modelo) {
   # Pausas nos extremos e movimento calculado quadro a quadro.
-  progressos <- c(rep(0, 18), seq(0, 0.18, length.out = 30), rep(0.18, 12),
-                 seq(0.18, 1, length.out = 96), rep(1, 24))
+  progressos <- c(rep(0, 18), seq(0, 1, length.out = 138), rep(1, 24))
   # Cada quadro repete a estrutura; somente o progresso da transição muda.
   estados <- purrr::map2(progressos, seq_along(progressos), function(progresso, quadro) {
     estado <- montar_transformacao(modelo, progresso)

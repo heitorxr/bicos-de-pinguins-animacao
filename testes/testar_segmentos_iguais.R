@@ -16,7 +16,7 @@ intervalos <- do.call(rbind, lapply(partes, function(z) range(z$x)))
 intervalos <- intervalos[order(intervalos[, 1]), , drop = FALSE]
 stopifnot(isTRUE(all.equal(unname(intervalos[1, 1]), faixa[1])), isTRUE(all.equal(unname(intervalos[3, 2]), faixa[2])),
   isTRUE(all.equal(unname(intervalos[1:2, 2]), unname(intervalos[2:3, 1]))))
-separado <- montar_transformacao(modelo, 0.18)
+separado <- inicio
 meio <- montar_transformacao(modelo, 0.59)
 fim <- montar_transformacao(modelo, 1)
 for (estado in list(inicio, separado, meio, fim)) {
@@ -24,14 +24,15 @@ for (estado in list(inicio, separado, meio, fim)) {
     identical(estado$pontos$id, modelo$dados$id), identical(estado$pontos$bill_len, modelo$dados$bill_len),
     identical(estado$pontos$bill_dep, modelo$dados$bill_dep))
 }
-stopifnot(all(separado$ramos$sincronia == 0), all(separado$ramos$cor == cores_pinguins[["Todos"]]))
-separacao <- do.call(rbind, lapply(split(separado$ramos, separado$ramos$grupo), function(z) range(z$x)))
-separacao <- separacao[order(separacao[, 1]), , drop = FALSE]
-stopifnot(all(separacao[1:2, 2] < separacao[2:3, 1]))
+cedo <- montar_transformacao(modelo, 0.09)
+if (cedo$sincronia <= 0 || all(cedo$ramos$cor == cores_pinguins[["Todos"]]))
+  stop("RED: giro e cor devem comecar juntos, sem abrir lacunas antes")
 for (grupo in names(partes)) {
   a <- inicio$ramos[inicio$ramos$grupo == grupo, ]; b <- meio$ramos[meio$ramos$grupo == grupo, ]
   c <- fim$ramos[fim$ramos$grupo == grupo, ]; s <- separado$ramos[separado$ramos$grupo == grupo, ]
-  stopifnot(isTRUE(all.equal(a$comprimento, s$comprimento)), all(b$sincronia > 0 & b$sincronia < 1),
+  centro <- function(z) c(mean(range(z$x)), mean(range(z$y)))
+  stopifnot(isTRUE(all.equal(centro(b), (1-b$sincronia[1])*centro(a) + b$sincronia[1]*centro(c))),
+    all(b$sincronia > 0 & b$sincronia < 1),
     isTRUE(all.equal((b$angulo - s$angulo) / (c$angulo - s$angulo), b$sincronia)))
   w <- b$sincronia[1]
   rgb <- round((1-w)*grDevices::col2rgb(cores_pinguins[["Todos"]]) + w*grDevices::col2rgb(cores_pinguins[[grupo]]))
@@ -43,4 +44,4 @@ for (grupo in names(partes)) {
 escala <- ggplot2::ggplot_build(criar_grafico_transformacao(modelo, 0))$plot$scales$get_scales("colour")
 if (!identical(unname(escala$get_labels(escala$get_breaks())), unname(nomes_pinguins[c("Adelie", "Chinstrap", "Gentoo")])))
   stop("RED: a legenda deve mostrar nomes das especies, nao codigos hexadecimais")
-cat("PASSOU: tres partes iguais e contiguas, separacao sem giro/cor antecipados, cor e angulo sincronizados e ajustes finais corretos.\n")
+cat("PASSOU: tres partes inicialmente coladas; separacao pelo proprio movimento; giro e cor sincronizados.\n")

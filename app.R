@@ -26,7 +26,7 @@ ui <- fluidPage(
         tags$section(class = "painel",
           tags$div(class = "titulo-painel",
             tags$h2("Olhe primeiro o conjunto. Depois, os grupos."),
-            tags$p("A reta geral se divide em três segmentos iguais. Depois eles giram, mudam de tamanho e ganham cor ao mesmo tempo. Os pontos ficam no mesmo lugar.")
+            tags$p("Três segmentos iguais começam colados, formando a reta geral. Eles se separam pelo próprio movimento, girando e mudando de tamanho e cor ao mesmo tempo. Os pontos ficam no mesmo lugar.")
           ),
           tags$div(class = "controles-transformacao",
             radioButtons("reproducao", NULL,
@@ -35,7 +35,7 @@ ui <- fluidPage(
           ),
           conditionalPanel("input.reproducao == 'gif'",
             tags$img(src = "pinguins.gif", class = "animacao",
-              alt = "A reta geral se parte em três segmentos iguais, que depois giram e mudam de tamanho e cor juntos, com os pinguins fixos.")
+              alt = "Três segmentos inicialmente unidos se transformam simultaneamente nas retas por espécie, sem afastamento prévio, com os pinguins fixos.")
           ),
           conditionalPanel("input.reproducao == 'manual'",
             tags$div(class = "controle-slider",

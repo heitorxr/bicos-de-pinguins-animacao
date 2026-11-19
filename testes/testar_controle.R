@@ -10,7 +10,7 @@ shiny::testServer(ambiente$server, {
   }
   session$setInputs(reproducao = "manual", progresso = 0)
   stopifnot(!estado_transformacao()$intermediario)
-  stopifnot(estado_transformacao()$sincronia == 0, estado_transformacao()$etapa == "divisao")
+  stopifnot(estado_transformacao()$sincronia == 0, estado_transformacao()$etapa == "unida")
   session$setInputs(progresso = 60)
   stopifnot(estado_transformacao()$intermediario)
   session$setInputs(progresso = 100)
