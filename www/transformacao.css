@@ -1,0 +1,17 @@
+.controles-transformacao { padding: 0 27px 16px; }
+.controle-slider { padding: 12px 27px 0; }
+.estado-transformacao {
+  margin: 12px 0 6px;
+  padding: 11px 14px;
+  border-left: 3px solid #006d77;
+  background: #edf6f6;
+  color: #244958;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .controles-transformacao { padding: 0 17px 14px; }
+  .controle-slider { padding: 10px 17px 0; }
+  .controles-transformacao .radio-inline { display: block; margin-left: 0; }
+}

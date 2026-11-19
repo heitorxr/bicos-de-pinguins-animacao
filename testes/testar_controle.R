@@ -1,0 +1,23 @@
+args <- commandArgs(trailingOnly = TRUE)
+raiz <- if (length(args)) args[[1]] else getwd()
+setwd(raiz)
+.libPaths(c(file.path(raiz, ".biblioteca"), .libPaths()))
+ambiente <- new.env(parent = globalenv())
+source("app.R", local = ambiente, encoding = "UTF-8")
+shiny::testServer(ambiente$server, {
+  if (!exists("estado_transformacao", mode = "function")) {
+    stop("O controle da divisao das retas ainda nao foi implementado no Shiny.")
+  }
+  session$setInputs(reproducao = "manual", progresso = 0)
+  stopifnot(!estado_transformacao()$intermediario)
+  stopifnot(estado_transformacao()$sincronia == 0, estado_transformacao()$etapa == "divisao")
+  session$setInputs(progresso = 60)
+  stopifnot(estado_transformacao()$intermediario)
+  session$setInputs(progresso = 100)
+  stopifnot(!estado_transformacao()$intermediario)
+  stopifnot(estado_transformacao()$alpha_ramos == 1)
+  stopifnot(estado_transformacao()$sincronia == 1)
+  session$setInputs(progresso = 0)
+  stopifnot(estado_transformacao()$sincronia == 0)
+})
+cat("PASSOU: controle manual em 0%, 60%, 100% e retorno ao inicio.\n")

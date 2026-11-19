@@ -6,8 +6,9 @@ modelo <- preparar_dados(read.csv("dados/pinguins.csv", stringsAsFactors = FALSE
 
 ui <- fluidPage(
   tags$head(
-    tags$title("Os mesmos pinguins. Duas leituras."),
+    tags$title("visualização de dados com animação - bicos de pinguin"),
     tags$link(rel = "stylesheet", type = "text/css", href = "estilo.css"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "transformacao.css"),
     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")
   ),
   tags$main(class = "pagina",
@@ -25,10 +26,26 @@ ui <- fluidPage(
         tags$section(class = "painel",
           tags$div(class = "titulo-painel",
             tags$h2("Olhe primeiro o conjunto. Depois, os grupos."),
-            tags$p("Os pontos ficam no mesmo lugar. A animação revela as espécies e troca a reta geral pelas retas de cada grupo.")
+            tags$p("A reta geral se divide em três segmentos iguais. Depois eles giram, mudam de tamanho e ganham cor ao mesmo tempo. Os pontos ficam no mesmo lugar.")
           ),
-          tags$img(src = "pinguins.gif", class = "animacao",
-                   alt = "Animação: correlação negativa no conjunto misturado e positiva nas três espécies, mantendo as mesmas coordenadas."),
+          tags$div(class = "controles-transformacao",
+            radioButtons("reproducao", NULL,
+              choices = c("Assistir à animação" = "gif", "Controlar a divisão da reta" = "manual"),
+              selected = "gif", inline = TRUE)
+          ),
+          conditionalPanel("input.reproducao == 'gif'",
+            tags$img(src = "pinguins.gif", class = "animacao",
+              alt = "A reta geral se parte em três segmentos iguais, que depois giram e mudam de tamanho e cor juntos, com os pinguins fixos.")
+          ),
+          conditionalPanel("input.reproducao == 'manual'",
+            tags$div(class = "controle-slider",
+              sliderInput("progresso", "Da reta geral às retas por espécie",
+                min = 0, max = 100, value = 0, step = 1,
+                animate = animationOptions(interval = 180, loop = FALSE)),
+              uiOutput("estado_transicao")
+            ),
+            plotOutput("grafico_transformacao", height = "480px")
+          ),
           tags$p(class = "nota", "Transição didática, não passagem do tempo. As medidas dos pinguins não são alteradas.")
         )
       ),
@@ -67,6 +84,22 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+  progresso_atual <- reactive({
+    if (is.null(input$progresso)) 0 else input$progresso / 100
+  })
+  estado_transformacao <- reactive({
+    montar_transformacao(modelo, progresso_atual())
+  })
+  output$estado_transicao <- renderUI({
+    tags$p(class = "estado-transformacao", estado_transformacao()$rotulo)
+  })
+  output$grafico_transformacao <- renderPlot({
+    grafico <- criar_grafico_transformacao(modelo, progresso_atual())
+    # O rotulo fica em HTML responsivo para nao cortar texto no celular.
+    grafico$layers <- Filter(function(camada) !inherits(camada$geom, "GeomText"), grafico$layers)
+    grafico + ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
+      ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
+  }, res = 110)
   resumo_ativo <- reactive({
     if (identical(input$modo, "especies")) {
       modelo$por_especie
