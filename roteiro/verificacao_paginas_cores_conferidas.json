@@ -1,0 +1,55 @@
+{
+  "paginas_pdf": 2,
+  "resolucao_paginas": [
+    1920,
+    1080
+  ],
+  "blocos_de_fala": 4,
+  "palavras_narracao": 349,
+  "leitura_aproximada_segundos_a_130_ppm": 161,
+  "limites_de_texto_verificados": 31,
+  "pdf_com_paginas_rasterizadas": true,
+  "cores_dos_graficos": {
+    "Adelie": "#D55E00",
+    "Chinstrap": "#0072B2",
+    "Gentoo": "#00856A"
+  },
+  "pdf_sem_perdas_verificado": true,
+  "textos_por_tela": {
+    "1": [
+      "Antes da animação",
+      "Tela de apoio 1/2",
+      "Medidas do bico e espécies do estudo",
+      "As duas medidas",
+      "As três espécies",
+      "Comprimento",
+      "Da base à ponta, pela parte superior do bico.",
+      "Profundidade",
+      "Altura do bico, de cima para baixo.",
+      "As duas medidas estão em milímetros.",
+      "Chinstrap",
+      "68 pinguins",
+      "#0072B2",
+      "Gentoo",
+      "123 pinguins",
+      "#00856A",
+      "Adélie",
+      "151 pinguins",
+      "#D55E00",
+      "Fundos e nomes seguem a paleta dos gráficos.",
+      "Ilustrações: Allison Horst (@allison_horst) · fundos adaptados; rótulos das medidas traduzidos."
+    ],
+    "2": [
+      "Depois da animação",
+      "Tela de apoio 2/2",
+      "Misturar espécies muda a comparação",
+      "Uma tendência negativa no conjunto; três positivas dentro das espécies.",
+      "342 pinguins: a mesma amostra nas duas leituras.",
+      "Adélie +0,391  |  Chinstrap +0,654  |  Gentoo +0,643",
+      "O clustering identifica grupos de observações semelhantes nos dados.",
+      "Aqui, usamos as espécies já conhecidas para separar os dados, sem aplicar um algoritmo de clustering.",
+      "Paradoxo de Simpson · correlação não demonstra causa e efeito.",
+      "Dados: Palmer Penguins; Horst, Hill e Gorman (2022), figura 5. Texto e montagem com assistência de IA."
+    ]
+  }
+}

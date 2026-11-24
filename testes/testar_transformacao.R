@@ -38,7 +38,7 @@ stopifnot(!isTRUE(all.equal(b$ramos$y, c$ramos$y)))
 stopifnot(a$alpha_ramos == 1, a$alpha_geral == 0, a$sincronia == 0)
 stopifnot(c$alpha_ramos == 1, c$alpha_geral == 0)
 stopifnot(b$intermediario, !a$intermediario, !c$intermediario)
-stopifnot(grepl("TRANSI", b$rotulo, fixed = TRUE))
+stopifnot(identical(b$rotulo, c$rotulo))
 
 # O grafico usa limites fixos e a animacao continua sendo gganimate.
 paineis <- lapply(c(0, 0.6, 1), function(t) {

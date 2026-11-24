@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Revisão do código — pinguins</title>
+  <style>body{font:16px system-ui;max-width:1100px;margin:24px auto;padding:0 18px;color:#172b40;background:#fff}h1{font-size:26px}p{color:#526675}details{border-top:1px solid #dce5eb;padding:8px 0}summary{cursor:pointer;font-weight:600;padding:12px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f4f8;padding:18px;border-radius:8px;font-size:14px;line-height:1.65}code{font-family:Consolas,monospace}</style>
+</head>
+<html lang="pt-BR">
+  <body>
+    <h1>Revisão do código — animação dos pinguins</h1>
+    <p>Clique no nome de cada arquivo para abrir ou fechar o código completo. Somente leitura; nada é executado nesta página.</p>
+    <p>Cópia gerada em 24/11/2026 09:19 -03</p>
+    <details open="open">
+      <summary>gerar_animacao.R</summary>
+      <pre>
+        <code>  1 | source("preparar.R", encoding = "UTF-8")
+  2 | source("R/modelo.R", encoding = "UTF-8")
+  3 | source("R/graficos.R", encoding = "UTF-8")
+  4 |
+  5 | # Usa a mesma amostra nos gráficos geral, por espécie e em todos os quadros.
+  6 | modelo &lt;- preparar_dados(ler_pinguins())
+  7 | dir.create("www", showWarnings = FALSE)
+  8 |
+  9 | # Salva os gráficos de apoio, sem precisar abrir o aplicativo.
+ 10 | ggplot2::ggsave("www/todos.png", criar_grafico(modelo, FALSE),
+ 11 |                 width = 10, height = 6.5, dpi = 120)
+ 12 | ggplot2::ggsave("www/especies.png", criar_grafico(modelo, TRUE),
+ 13 |                 width = 10, height = 6.5, dpi = 120)
+ 14 | purrr::walk2(c(0, 0.18, 0.59, 1), c("inicio", "divisao", "meio", "fim"), function(valor, nome) {
+ 15 |   ggplot2::ggsave(paste0("www/transformacao_", nome, ".png"),
+ 16 |     criar_grafico_transformacao(modelo, valor), width = 10, height = 6.5, dpi = 120)
+ 17 | })
+ 18 |
+ 19 | # O GIF é exportado diretamente pelo gganimate; os pontos permanecem fixos.
+ 20 | animacao &lt;- gganimate::animate(
+ 21 |   montar_animacao(modelo),
+ 22 |   nframes = 180,
+ 23 |   fps = 12,
+ 24 |   width = 960,
+ 25 |   height = 640,
+ 26 |   res = 105,
+ 27 |   renderer = gganimate::gifski_renderer("www/pinguins.gif", loop = TRUE)
+ 28 | )
+ 29 | stopifnot(file.exists("www/pinguins.gif"), file.info("www/pinguins.gif")$size &gt; 1000)
+ 30 | cat("Animacao real do gganimate gerada em www/pinguins.gif\n")</code>
+      </pre>
+    </details>
+    <details>
+      <summary>R/modelo.R</summary>
+      <pre>
+        <code>  1 | # Lê a cópia local, mantendo as unidades e os tipos originais das medidas.
+  2 | ler_pinguins &lt;- function(arquivo = "dados/pinguins.csv") {
+  3 |   readr::read_csv(
+  4 |     arquivo,
+  5 |     show_col_types = FALSE,
+  6 |     col_types = readr::cols(
+  7 |       species = readr::col_character(),
+  8 |       island = readr::col_character(),
+  9 |       bill_len = readr::col_double(),
+ 10 |       bill_dep = readr::col_double(),
+ 11 |       flipper_len = readr::col_integer(),
+ 12 |       body_mass = readr::col_integer(),
+ 13 |       sex = readr::col_character(),
+ 14 |       year = readr::col_integer()
+ 15 |     )
+ 16 |   ) |&gt;
+ 17 |     as.data.frame()
+ 18 | }
+ 19 |
+ 20 | preparar_dados &lt;- function(dados) {
+ 21 |   # Criar o identificador antes da exclusão preserva a origem de cada ponto.
+ 22 |   dados_limpos &lt;- dados |&gt;
+ 23 |     dplyr::mutate(id = dplyr::row_number()) |&gt;
+ 24 |     tidyr::drop_na(species, bill_len, bill_dep) |&gt;
+ 25 |     dplyr::mutate(species = factor(species, levels = c("Adelie", "Chinstrap", "Gentoo"))) |&gt;
+ 26 |     as.data.frame()
+ 27 |
+ 28 |   # Correlação e contagem são calculadas separadamente dentro de cada espécie.
+ 29 |   por_especie &lt;- dados_limpos |&gt;
+ 30 |     dplyr::group_by(species) |&gt;
+ 31 |     dplyr::summarise(
+ 32 |       n = dplyr::n(),
+ 33 |       r = cor(bill_len, bill_dep),
+ 34 |       .groups = "drop"
+ 35 |     ) |&gt;
+ 36 |     dplyr::transmute(especie = as.character(species), n, r) |&gt;
+ 37 |     as.data.frame()
+ 38 |
+ 39 |   list(
+ 40 |     dados = dados_limpos,
+ 41 |     excluidos = nrow(dados) - nrow(dados_limpos),
+ 42 |     r_geral = cor(dados_limpos$bill_len, dados_limpos$bill_dep),
+ 43 |     por_especie = por_especie
+ 44 |   )
+ 45 | }</code>
+      </pre>
+    </details>
+    <details>
+      <summary>R/graficos.R</summary>
+      <pre>
+        <code>  1 | cores_pinguins &lt;- c(
+  2 |   Todos = "#788591",
+  3 |   Adelie = "#D55E00",
+  4 |   Chinstrap = "#0072B2",
+  5 |   Gentoo = "#00856A"
+  6 | )
+  7 | nomes_pinguins &lt;- c(
+  8 |   Todos = "Sem separar",
+  9 |   Adelie = "Adélie",
+ 10 |   Chinstrap = "Chinstrap",
+ 11 |   Gentoo = "Gentoo"
+ 12 | )
+ 13 | etapas_pinguins &lt;- c("1. Todos misturados", "2. Espécies reveladas")
+ 14 |
+ 15 | montar_estados &lt;- function(modelo) {
+ 16 |   dados &lt;- modelo$dados
+ 17 |   # Duas leituras da mesma amostra: não são novas observações.
+ 18 |   todos &lt;- dados |&gt; dplyr::mutate(grupo = "Todos", etapa = etapas_pinguins[1])
+ 19 |   especies &lt;- dados |&gt; dplyr::mutate(grupo = as.character(species), etapa = etapas_pinguins[2])
+ 20 |   pontos &lt;- dplyr::bind_rows(todos, especies) |&gt;
+ 21 |     dplyr::mutate(etapa = factor(etapa, levels = etapas_pinguins)) |&gt;
+ 22 |     as.data.frame()
+ 23 |
+ 24 |   # Calcula uma tabela por grupo e reúne os resultados.
+ 25 |   linhas &lt;- purrr::map_dfr(names(cores_pinguins), function(grupo) {
+ 26 |     dados_grupo &lt;- if (grupo == "Todos") dados else dplyr::filter(dados, species == grupo)
+ 27 |     ajuste &lt;- lm(bill_dep ~ bill_len, data = dados_grupo)
+ 28 |     x &lt;- seq(min(dados_grupo$bill_len), max(dados_grupo$bill_len), length.out = 60)
+ 29 |     etapa_grupo &lt;- if (grupo == "Todos") etapas_pinguins[1] else etapas_pinguins[2]
+ 30 |     tibble::tibble(
+ 31 |       bill_len = x,
+ 32 |       bill_dep = as.numeric(predict(ajuste, newdata = tibble::tibble(bill_len = x))),
+ 33 |       grupo = grupo,
+ 34 |       etapa = etapa_grupo
+ 35 |     )
+ 36 |   }) |&gt;
+ 37 |     dplyr::mutate(etapa = factor(etapa, levels = etapas_pinguins)) |&gt;
+ 38 |     as.data.frame()
+ 39 |   list(pontos = pontos, linhas = linhas)
+ 40 | }
+ 41 |
+ 42 | criar_grafico &lt;- function(modelo, separar = FALSE) {
+ 43 |   estados &lt;- montar_estados(modelo)
+ 44 |   pontos &lt;- estados$pontos
+ 45 |   linhas &lt;- estados$linhas
+ 46 |   if (!is.null(separar)) {
+ 47 |     etapa_escolhida &lt;- etapas_pinguins[if (separar) 2 else 1]
+ 48 |     pontos &lt;- dplyr::filter(pontos, etapa == etapa_escolhida)
+ 49 |     linhas &lt;- dplyr::filter(linhas, etapa == etapa_escolhida)
+ 50 |   }
+ 51 |   ggplot2::ggplot(pontos, ggplot2::aes(x = bill_len, y = bill_dep)) +
+ 52 |     ggplot2::geom_point(ggplot2::aes(colour = grupo, group = id),
+ 53 |                        size = 2.6, alpha = 0.76) +
+ 54 |     ggplot2::geom_line(data = linhas, ggplot2::aes(colour = grupo, group = grupo),
+ 55 |                       linewidth = 1.35) +
+ 56 |     ggplot2::scale_colour_manual(values = cores_pinguins, labels = nomes_pinguins,
+ 57 |                                  breaks = names(cores_pinguins), drop = FALSE) +
+ 58 |     ggplot2::coord_cartesian(xlim = c(30, 62), ylim = c(12, 23), expand = FALSE) +
+ 59 |     ggplot2::labs(
+ 60 |       title = "Os mesmos pinguins. Duas leituras.",
+ 61 |       subtitle = if (isTRUE(separar)) etapas_pinguins[2] else etapas_pinguins[1],
+ 62 |       x = "Comprimento do bico (mm)", y = "Profundidade do bico (mm)", colour = NULL,
+ 63 |       caption = paste0(nrow(modelo$dados), " pinguins com as duas medidas · ",
+ 64 |                        modelo$excluidos, " registros excluídos por medida ausente\n",
+ 65 |                        "A animação revela grupos; não representa passagem do tempo.")
+ 66 |     ) +
+ 67 |     ggplot2::theme_minimal(base_size = 15, base_family = "sans") +
+ 68 |     ggplot2::theme(
+ 69 |       plot.background = ggplot2::element_rect(fill = "#F8FAFC", colour = NA),
+ 70 |       panel.background = ggplot2::element_rect(fill = "#F8FAFC", colour = NA),
+ 71 |       plot.title = ggplot2::element_text(face = "bold", colour = "#132B3B", size = 22),
+ 72 |       plot.subtitle = ggplot2::element_text(colour = "#486174", margin = ggplot2::margin(b = 15)),
+ 73 |       plot.caption = ggplot2::element_text(colour = "#526675", hjust = 0, size = 10, lineheight = 1.3),
+ 74 |       panel.grid.minor = ggplot2::element_blank(),
+ 75 |       panel.grid.major = ggplot2::element_line(colour = "#E2E8F0", linewidth = 0.4),
+ 76 |       legend.position = "bottom", legend.text = ggplot2::element_text(size = 11),
+ 77 |       axis.title = ggplot2::element_text(colour = "#243E50"),
+ 78 |       plot.margin = ggplot2::margin(22, 24, 16, 18)
+ 79 |     )
+ 80 | }
+ 81 |
+ 82 | rotulo_correlacao &lt;- function(modelo, por_especie = FALSE) {
+ 83 |   if (!por_especie) {
+ 84 |     return(paste0("Todos misturados: r = ",
+ 85 |       formatC(modelo$r_geral, digits = 3, format = "f", decimal.mark = ",")))
+ 86 |   }
+ 87 |   paste0("Por espécie: ", paste0(
+ 88 |     nomes_pinguins[modelo$por_especie$especie], " ",
+ 89 |     formatC(modelo$por_especie$r, digits = 3, format = "f", flag = "+", decimal.mark = ","),
+ 90 |     collapse = "  |  "))
+ 91 | }
+ 92 |
+ 93 | montar_transformacao &lt;- function(modelo, progresso) {
+ 94 |   if (length(progresso) != 1L || !is.numeric(progresso) ||
+ 95 |       !is.finite(progresso) || progresso &lt; 0 || progresso &gt; 1) {
+ 96 |     stop("progresso deve ser um número entre 0 e 1.")
+ 97 |   }
+ 98 |   dados &lt;- modelo$dados
+ 99 |   geral &lt;- lm(bill_dep ~ bill_len, data = dados)
+100 |   faixa &lt;- range(dados$bill_len)
+101 |   x_geral &lt;- seq(faixa[1], faixa[2], length.out = 60)
+102 |   y_geral &lt;- as.numeric(predict(geral, newdata = data.frame(bill_len = x_geral)))
+103 |   angulo_inicial &lt;- atan(coef(geral)[[2]])
+104 |   comprimento_inicial &lt;- diff(faixa) * sqrt(1 + coef(geral)[[2]]^2) / 3
+105 |   # As três partes começam coladas. O movimento cria a separação, sem afastamento prévio.
+106 |   # A suavização faz o movimento começar e terminar devagar.
+107 |   mover &lt;- 3 * progresso^2 - 2 * progresso^3
+108 |   grupos &lt;- levels(dados$species)
+109 |   # Ordena as espécies pelo centro da faixa de comprimentos, sem mover os pontos.
+110 |   ordem &lt;- dados |&gt;
+111 |     dplyr::group_by(species) |&gt;
+112 |     dplyr::summarise(centro_da_faixa = mean(range(bill_len)), .groups = "drop") |&gt;
+113 |     dplyr::arrange(centro_da_faixa) |&gt;
+114 |     dplyr::pull(species) |&gt;
+115 |     as.character()
+116 |   # Mistura o cinza inicial com a cor da espécie usando o mesmo peso do giro.
+117 |   cores &lt;- grupos |&gt;
+118 |     purrr::set_names() |&gt;
+119 |     purrr::map_chr(function(grupo) {
+120 |       rgb &lt;- round((1 - mover) * grDevices::col2rgb(cores_pinguins[["Todos"]]) +
+121 |         mover * grDevices::col2rgb(cores_pinguins[[grupo]]))
+122 |       grDevices::rgb(rgb[1], rgb[2], rgb[3], maxColorValue = 255)
+123 |     })
+124 |   ramos &lt;- purrr::map_dfr(grupos, function(grupo) {
+125 |     dados_especie &lt;- dplyr::filter(dados, species == grupo)
+126 |     ajuste &lt;- lm(bill_dep ~ bill_len, data = dados_especie)
+127 |     x_final &lt;- range(dados_especie$bill_len)
+128 |     y_final &lt;- as.numeric(predict(ajuste, newdata = tibble::tibble(bill_len = x_final)))
+129 |     indice &lt;- match(grupo, ordem)
+130 |     centro_x &lt;- faixa[1] + (indice - 0.5) * diff(faixa) / 3
+131 |     centro_y &lt;- as.numeric(predict(geral, newdata = data.frame(bill_len = centro_x)))
+132 |     # Ângulo, comprimento, posição e cor usam exatamente o mesmo progresso.
+133 |     angulo &lt;- (1 - mover) * angulo_inicial + mover * atan2(diff(y_final), diff(x_final))
+134 |     comprimento &lt;- (1 - mover) * comprimento_inicial + mover * sqrt(diff(x_final)^2 + diff(y_final)^2)
+135 |     centro_x &lt;- (1 - mover) * centro_x + mover * mean(x_final)
+136 |     centro_y &lt;- (1 - mover) * centro_y + mover * mean(y_final)
+137 |     posicao &lt;- seq(-0.5, 0.5, length.out = 60)
+138 |     cor_atual &lt;- cores[[grupo]]
+139 |     tibble::tibble(
+140 |       x = centro_x + posicao * comprimento * cos(angulo),
+141 |       y = centro_y + posicao * comprimento * sin(angulo),
+142 |       grupo = grupo, alpha = 1, cor = cor_atual,
+143 |       angulo = angulo, comprimento = comprimento, sincronia = mover
+144 |     )
+145 |   }) |&gt; as.data.frame()
+146 |   pontos &lt;- dados |&gt;
+147 |     dplyr::mutate(grupo = as.character(species), cor = unname(cores[grupo])) |&gt;
+148 |     as.data.frame()
+149 |   referencia &lt;- tibble::tibble(x = x_geral, y = y_geral,
+150 |                             alpha_solida = 0, alpha_tracejada = 0) |&gt; as.data.frame()
+151 |   intermediario &lt;- progresso &gt; 0 &amp;&amp; progresso &lt; 1
+152 |   rotulo &lt;- rotulo_correlacao(modelo, por_especie = progresso &gt;= 0.5)
+153 |   list(pontos = pontos, ramos = ramos, referencia = referencia,
+154 |        alpha_ramos = 1, alpha_geral = 0, sincronia = mover,
+155 |        etapa = if (progresso == 0) "unida" else "transformacao",
+156 |        intermediario = intermediario, rotulo = rotulo)
+157 | }
+158 |
+159 | plotar_transformacao &lt;- function(modelo, dados) {
+160 |   ggplot2::ggplot() +
+161 |     ggplot2::geom_point(data = dados$pontos,
+162 |       ggplot2::aes(bill_len, bill_dep, group = id, colour = cor),
+163 |       size = 2.6, alpha = 0.76, show.legend = TRUE) +
+164 |     ggplot2::geom_line(data = dados$ramos,
+165 |       ggplot2::aes(x, y, group = grupo, colour = cor), linewidth = 1.35, show.legend = TRUE) +
+166 |     ggplot2::geom_text(data = dados$rotulos,
+167 |       ggplot2::aes(x = 30.8, y = 22.8, label = rotulo, group = 1),
+168 |       hjust = 0, vjust = 1, size = 3.8, colour = "#425E70") +
+169 |     ggplot2::scale_colour_identity(guide = "legend",
+170 |       limits = unique(c(unname(cores_pinguins), dados$pontos$cor, dados$ramos$cor)),
+171 |       labels = c("Geral", unname(nomes_pinguins[c("Adelie", "Chinstrap", "Gentoo")])),
+172 |       breaks = unname(cores_pinguins), drop = FALSE) +
+173 |     ggplot2::coord_cartesian(xlim = c(30, 62), ylim = c(12, 23), expand = FALSE) +
+174 |     ggplot2::labs(
+175 |       title = "Uma reta geral. Três relações diferentes.",
+176 |       subtitle = "Comprimento e profundidade do bico: correlação geral e por espécie.",
+177 |       x = "Comprimento do bico (mm)", y = "Profundidade do bico (mm)", colour = NULL,
+178 |       caption = paste0(nrow(modelo$dados), " pinguins com as duas medidas · ", modelo$excluidos,
+179 |         " registros excluídos por medida ausente\n",
+180 |         "Pontos e eixos fixos. Movimento ilustrativo.")
+181 |     ) + criar_grafico(modelo, FALSE)$theme
+182 | }
+183 |
+184 | criar_grafico_transformacao &lt;- function(modelo, progresso) {
+185 |   estado &lt;- montar_transformacao(modelo, progresso)
+186 |   estado$rotulos &lt;- tibble::tibble(rotulo = estado$rotulo)
+187 |   plotar_transformacao(modelo, estado)
+188 | }
+189 |
+190 | montar_animacao &lt;- function(modelo) {
+191 |   # Pausas nos extremos e movimento calculado quadro a quadro.
+192 |   progressos &lt;- c(
+193 |     rep(0, 18), # Pausa na reta geral.
+194 |     seq(0, 1, length.out = 138), # Transição até as retas por espécie.
+195 |     rep(1, 24) # Pausa no resultado final.
+196 |   )
+197 |   # imap percorre o progresso junto com o número de cada quadro.
+198 |   estados &lt;- purrr::imap(progressos, function(progresso, quadro) {
+199 |     estado &lt;- montar_transformacao(modelo, progresso)
+200 |     # A troca considera a duração total, incluindo as pausas nos extremos.
+201 |     estado$rotulos &lt;- tibble::tibble(rotulo = rotulo_correlacao(modelo,
+202 |       por_especie = quadro &gt; length(progressos) / 2))
+203 |     purrr::map(estado[c("pontos", "ramos", "referencia", "rotulos")], function(tabela) {
+204 |       dplyr::mutate(tabela, quadro = quadro)
+205 |     })
+206 |   })
+207 |   # Junta os quadros, mantendo uma tabela para cada componente do desenho.
+208 |   dados &lt;- c("pontos", "ramos", "referencia", "rotulos") |&gt;
+209 |     purrr::set_names() |&gt;
+210 |     purrr::map(function(nome) purrr::map_dfr(estados, nome))
+211 |   plotar_transformacao(modelo, dados) + gganimate::transition_manual(quadro)
+212 | }</code>
+      </pre>
+    </details>
+  </body>
+</html>
+</html>

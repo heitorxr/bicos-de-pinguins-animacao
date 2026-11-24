@@ -42,6 +42,6 @@ for (grupo in names(partes)) {
   stopifnot(isTRUE(all.equal(c$y, as.numeric(predict(regressao, newdata = data.frame(bill_len = c$x))))))
 }
 escala <- ggplot2::ggplot_build(criar_grafico_transformacao(modelo, 0))$plot$scales$get_scales("colour")
-if (!identical(unname(escala$get_labels(escala$get_breaks())), unname(nomes_pinguins[c("Adelie", "Chinstrap", "Gentoo")])))
-  stop("RED: a legenda deve mostrar nomes das especies, nao codigos hexadecimais")
+if (!identical(unname(escala$get_labels(escala$get_breaks())), c("Geral", unname(nomes_pinguins[c("Adelie", "Chinstrap", "Gentoo")]))))
+  stop("RED: a legenda deve mostrar Geral e os nomes das especies, nao codigos hexadecimais")
 cat("PASSOU: tres partes inicialmente coladas; separacao pelo proprio movimento; giro e cor sincronizados.\n")

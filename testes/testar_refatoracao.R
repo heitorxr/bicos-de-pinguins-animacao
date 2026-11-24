@@ -10,11 +10,20 @@ purrr::walk(arquivos, function(arquivo) {
   if (!grepl("dplyr::|purrr::|tidyr::", texto)) stop(paste("RED: código ainda sem tidyverse em", arquivo))
 })
 normalizar <- function(x) {
-  if (is.data.frame(x)) { x <- as.data.frame(x); rownames(x) <- NULL; return(x) }
-  if (is.list(x)) return(purrr::map(x, normalizar))
+  if (is.data.frame(x)) {
+    x <- as.data.frame(x)
+    rownames(x) <- NULL
+    # Só os textos de apresentação foram alterados; a geometria continua comparável.
+    x$label <- NULL
+    return(x)
+  }
+  if (is.list(x)) {
+    x$rotulo <- NULL
+    return(purrr::map(x, normalizar))
+  }
   x
 }
-# Compara com a versão aprovada, ignorando só os nomes irrelevantes das linhas.
+# Compara com a versão aprovada, exceto nomes de linhas e textos de apresentação.
 modelo <- preparar_dados(read.csv(file.path(raiz, "dados", "pinguins.csv"), stringsAsFactors = FALSE))
 modelo_readr <- preparar_dados(ler_pinguins(file.path(raiz, "dados", "pinguins.csv")))
 stopifnot(isTRUE(all.equal(as.list(modelo_readr$dados), as.list(modelo$dados))),
@@ -23,6 +32,6 @@ atual <- list(modelo = modelo, estados = montar_estados(modelo),
   transformacoes = purrr::map(c(0, 0.09, 0.18, 0.3, 0.59, 0.8, 1), function(p) montar_transformacao(modelo, p)),
   desenhos = purrr::map(c(0, 0.18, 0.59, 1), function(p) ggplot2::ggplot_build(criar_grafico_transformacao(modelo, p))$data))
 esperado <- readRDS(file.path(raiz, "testes", "referencia_refatoracao.rds"))
-diferenca <- all.equal(normalizar(atual), esperado, tolerance = 1e-12)
+diferenca <- all.equal(normalizar(atual), normalizar(esperado), tolerance = 1e-12)
 if (!isTRUE(diferenca)) stop(paste(diferenca, collapse = "\n"))
 cat("PASSOU: tidyverse no código principal, amostra, estatísticas, cores, geometria e desenhos preservados.\n")

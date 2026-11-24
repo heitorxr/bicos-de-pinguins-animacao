@@ -1,0 +1,26 @@
+{
+  "paginas_pdf": 2,
+  "resolucao_paginas": [
+    1920,
+    1080
+  ],
+  "blocos_de_fala": 4,
+  "palavras_narracao": 349,
+  "leitura_aproximada_segundos_a_130_ppm": 161,
+  "limites_de_texto_verificados": 29,
+  "pdf_com_paginas_rasterizadas": true,
+  "cores_fundos_e_nomes": {
+    "Chinstrap": {
+      "hex": "#0072B2",
+      "pixels_fundo": 193332
+    },
+    "Gentoo": {
+      "hex": "#00856A",
+      "pixels_fundo": 231879
+    },
+    "Adelie": {
+      "hex": "#D55E00",
+      "pixels_fundo": 207203
+    }
+  }
+}

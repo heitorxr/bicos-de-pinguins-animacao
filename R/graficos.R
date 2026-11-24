@@ -1,5 +1,15 @@
-cores_pinguins <- c(Todos = "#788591", Adelie = "#D55E00", Chinstrap = "#0072B2", Gentoo = "#00856A")
-nomes_pinguins <- c(Todos = "Sem separar", Adelie = "Adélie", Chinstrap = "Chinstrap", Gentoo = "Gentoo")
+cores_pinguins <- c(
+  Todos = "#788591",
+  Adelie = "#D55E00",
+  Chinstrap = "#0072B2",
+  Gentoo = "#00856A"
+)
+nomes_pinguins <- c(
+  Todos = "Sem separar",
+  Adelie = "Adélie",
+  Chinstrap = "Chinstrap",
+  Gentoo = "Gentoo"
+)
 etapas_pinguins <- c("1. Todos misturados", "2. Espécies reveladas")
 
 montar_estados <- function(modelo) {
@@ -13,14 +23,16 @@ montar_estados <- function(modelo) {
 
   # Calcula uma tabela por grupo e reúne os resultados.
   linhas <- purrr::map_dfr(names(cores_pinguins), function(grupo) {
-    parte <- if (grupo == "Todos") dados else dplyr::filter(dados, species == grupo)
-    ajuste <- lm(bill_dep ~ bill_len, data = parte)
-    x <- seq(min(parte$bill_len), max(parte$bill_len), length.out = 60)
+    dados_grupo <- if (grupo == "Todos") dados else dplyr::filter(dados, species == grupo)
+    ajuste <- lm(bill_dep ~ bill_len, data = dados_grupo)
+    x <- seq(min(dados_grupo$bill_len), max(dados_grupo$bill_len), length.out = 60)
     etapa_grupo <- if (grupo == "Todos") etapas_pinguins[1] else etapas_pinguins[2]
-    tibble::tibble(bill_len = x,
-               bill_dep = as.numeric(predict(ajuste, newdata = data.frame(bill_len = x))),
-               grupo = grupo,
-               etapa = etapa_grupo)
+    tibble::tibble(
+      bill_len = x,
+      bill_dep = as.numeric(predict(ajuste, newdata = tibble::tibble(bill_len = x))),
+      grupo = grupo,
+      etapa = etapa_grupo
+    )
   }) |>
     dplyr::mutate(etapa = factor(etapa, levels = etapas_pinguins)) |>
     as.data.frame()
@@ -67,6 +79,17 @@ criar_grafico <- function(modelo, separar = FALSE) {
     )
 }
 
+rotulo_correlacao <- function(modelo, por_especie = FALSE) {
+  if (!por_especie) {
+    return(paste0("Todos misturados: r = ",
+      formatC(modelo$r_geral, digits = 3, format = "f", decimal.mark = ",")))
+  }
+  paste0("Por espécie: ", paste0(
+    nomes_pinguins[modelo$por_especie$especie], " ",
+    formatC(modelo$por_especie$r, digits = 3, format = "f", flag = "+", decimal.mark = ","),
+    collapse = "  |  "))
+}
+
 montar_transformacao <- function(modelo, progresso) {
   if (length(progresso) != 1L || !is.numeric(progresso) ||
       !is.finite(progresso) || progresso < 0 || progresso > 1) {
@@ -80,27 +103,29 @@ montar_transformacao <- function(modelo, progresso) {
   angulo_inicial <- atan(coef(geral)[[2]])
   comprimento_inicial <- diff(faixa) * sqrt(1 + coef(geral)[[2]]^2) / 3
   # As três partes começam coladas. O movimento cria a separação, sem afastamento prévio.
-  mover <- progresso
-  mover <- 3 * mover^2 - 2 * mover^3
+  # A suavização faz o movimento começar e terminar devagar.
+  mover <- 3 * progresso^2 - 2 * progresso^3
   grupos <- levels(dados$species)
-  centros <- purrr::map_dbl(grupos, function(grupo) {
-    dados |>
-      dplyr::filter(species == grupo) |>
-      dplyr::summarise(centro = mean(range(bill_len))) |>
-      dplyr::pull(centro)
-  })
-  ordem <- grupos[order(centros)]
+  # Ordena as espécies pelo centro da faixa de comprimentos, sem mover os pontos.
+  ordem <- dados |>
+    dplyr::group_by(species) |>
+    dplyr::summarise(centro_da_faixa = mean(range(bill_len)), .groups = "drop") |>
+    dplyr::arrange(centro_da_faixa) |>
+    dplyr::pull(species) |>
+    as.character()
   # Mistura o cinza inicial com a cor da espécie usando o mesmo peso do giro.
-  cores <- setNames(purrr::map_chr(grupos, function(grupo) {
-    rgb <- round((1 - mover) * grDevices::col2rgb(cores_pinguins[["Todos"]]) +
-      mover * grDevices::col2rgb(cores_pinguins[[grupo]]))
-    grDevices::rgb(rgb[1], rgb[2], rgb[3], maxColorValue = 255)
-  }), grupos)
+  cores <- grupos |>
+    purrr::set_names() |>
+    purrr::map_chr(function(grupo) {
+      rgb <- round((1 - mover) * grDevices::col2rgb(cores_pinguins[["Todos"]]) +
+        mover * grDevices::col2rgb(cores_pinguins[[grupo]]))
+      grDevices::rgb(rgb[1], rgb[2], rgb[3], maxColorValue = 255)
+    })
   ramos <- purrr::map_dfr(grupos, function(grupo) {
-    parte <- dplyr::filter(dados, species == grupo)
-    ajuste <- lm(bill_dep ~ bill_len, data = parte)
-    x_final <- range(parte$bill_len)
-    y_final <- as.numeric(predict(ajuste, newdata = data.frame(bill_len = x_final)))
+    dados_especie <- dplyr::filter(dados, species == grupo)
+    ajuste <- lm(bill_dep ~ bill_len, data = dados_especie)
+    x_final <- range(dados_especie$bill_len)
+    y_final <- as.numeric(predict(ajuste, newdata = tibble::tibble(bill_len = x_final)))
     indice <- match(grupo, ordem)
     centro_x <- faixa[1] + (indice - 0.5) * diff(faixa) / 3
     centro_y <- as.numeric(predict(geral, newdata = data.frame(bill_len = centro_x)))
@@ -124,17 +149,7 @@ montar_transformacao <- function(modelo, progresso) {
   referencia <- tibble::tibble(x = x_geral, y = y_geral,
                             alpha_solida = 0, alpha_tracejada = 0) |> as.data.frame()
   intermediario <- progresso > 0 && progresso < 1
-  rotulo <- if (progresso == 0) {
-    paste0("Todos misturados: r = ", formatC(modelo$r_geral, digits = 3, format = "f", decimal.mark = ","))
-  } else if (progresso == 1) {
-    paste0("Por espécie: ", paste0(
-      nomes_pinguins[modelo$por_especie$especie], " ",
-      formatC(modelo$por_especie$r, digits = 3, format = "f", flag = "+", decimal.mark = ","),
-      collapse = "  |  "
-    ))
-  } else {
-    "TRANSIÇÃO VISUAL: cor, ângulo e tamanho mudam juntos"
-  }
+  rotulo <- rotulo_correlacao(modelo, por_especie = progresso >= 0.5)
   list(pontos = pontos, ramos = ramos, referencia = referencia,
        alpha_ramos = 1, alpha_geral = 0, sincronia = mover,
        etapa = if (progresso == 0) "unida" else "transformacao",
@@ -153,16 +168,16 @@ plotar_transformacao <- function(modelo, dados) {
       hjust = 0, vjust = 1, size = 3.8, colour = "#425E70") +
     ggplot2::scale_colour_identity(guide = "legend",
       limits = unique(c(unname(cores_pinguins), dados$pontos$cor, dados$ramos$cor)),
-      labels = unname(nomes_pinguins[c("Adelie", "Chinstrap", "Gentoo")]),
-      breaks = unname(cores_pinguins[c("Adelie", "Chinstrap", "Gentoo")]), drop = FALSE) +
+      labels = c("Geral", unname(nomes_pinguins[c("Adelie", "Chinstrap", "Gentoo")])),
+      breaks = unname(cores_pinguins), drop = FALSE) +
     ggplot2::coord_cartesian(xlim = c(30, 62), ylim = c(12, 23), expand = FALSE) +
     ggplot2::labs(
       title = "Uma reta geral. Três relações diferentes.",
-      subtitle = "Três partes iguais giram e mudam de tamanho e cor até os ajustes por espécie.",
+      subtitle = "Comprimento e profundidade do bico: correlação geral e por espécie.",
       x = "Comprimento do bico (mm)", y = "Profundidade do bico (mm)", colour = NULL,
       caption = paste0(nrow(modelo$dados), " pinguins com as duas medidas · ", modelo$excluidos,
         " registros excluídos por medida ausente\n",
-        "Pontos e eixos fixos. Movimento ilustrativo, sem passagem do tempo.")
+        "Pontos e eixos fixos. Movimento ilustrativo.")
     ) + criar_grafico(modelo, FALSE)$theme
 }
 
@@ -174,18 +189,24 @@ criar_grafico_transformacao <- function(modelo, progresso) {
 
 montar_animacao <- function(modelo) {
   # Pausas nos extremos e movimento calculado quadro a quadro.
-  progressos <- c(rep(0, 18), seq(0, 1, length.out = 138), rep(1, 24))
-  # Cada quadro repete a estrutura; somente o progresso da transição muda.
-  estados <- purrr::map2(progressos, seq_along(progressos), function(progresso, quadro) {
+  progressos <- c(
+    rep(0, 18), # Pausa na reta geral.
+    seq(0, 1, length.out = 138), # Transição até as retas por espécie.
+    rep(1, 24) # Pausa no resultado final.
+  )
+  # imap percorre o progresso junto com o número de cada quadro.
+  estados <- purrr::imap(progressos, function(progresso, quadro) {
     estado <- montar_transformacao(modelo, progresso)
-    estado$rotulos <- tibble::tibble(rotulo = estado$rotulo)
+    # A troca considera a duração total, incluindo as pausas nos extremos.
+    estado$rotulos <- tibble::tibble(rotulo = rotulo_correlacao(modelo,
+      por_especie = quadro > length(progressos) / 2))
     purrr::map(estado[c("pontos", "ramos", "referencia", "rotulos")], function(tabela) {
       dplyr::mutate(tabela, quadro = quadro)
     })
   })
-  dados <- purrr::map(c("pontos", "ramos", "referencia", "rotulos"), function(nome) {
-    purrr::map_dfr(estados, function(estado) estado[[nome]])
-  })
-  names(dados) <- c("pontos", "ramos", "referencia", "rotulos")
+  # Junta os quadros, mantendo uma tabela para cada componente do desenho.
+  dados <- c("pontos", "ramos", "referencia", "rotulos") |>
+    purrr::set_names() |>
+    purrr::map(function(nome) purrr::map_dfr(estados, nome))
   plotar_transformacao(modelo, dados) + gganimate::transition_manual(quadro)
 }

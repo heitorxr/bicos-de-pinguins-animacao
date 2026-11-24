@@ -1,0 +1,17 @@
+{
+  "rotulos": {
+    "Bill length": "Comprimento",
+    "Bill depth": "Profundidade"
+  },
+  "sha256_original": "421284fdd05eec240a4051898a722416664489ddcf0efd67f49a3582b5879f2c",
+  "setas_preservadas": [
+    true,
+    true,
+    true,
+    true,
+    true,
+    true
+  ],
+  "fora_dos_rotulos_preservado": true,
+  "credito": "Ilustração de Allison Horst; tradução dos rótulos."
+}
