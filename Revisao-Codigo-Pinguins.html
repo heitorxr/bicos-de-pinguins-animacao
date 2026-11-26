@@ -13,7 +13,7 @@
   <body>
     <h1>Revisão do código — animação dos pinguins</h1>
     <p>Clique no nome de cada arquivo para abrir ou fechar o código completo. Somente leitura; nada é executado nesta página.</p>
-    <p>Cópia gerada em 26/11/2026 14:51 -03</p>
+    <p>Cópia gerada em 26/11/2026 15:53 -03</p>
     <details open="open">
       <summary>iniciar.R</summary>
       <pre>
@@ -28,7 +28,7 @@
       <pre>
         <code>  1 | dir.create(".biblioteca", recursive = TRUE, showWarnings = FALSE)
   2 | .libPaths(c(normalizePath(".biblioteca"), .libPaths()))
-  3 | pacotes &lt;- c("shiny", "ggplot2", "gganimate", "gifski", "dplyr", "tidyr", "purrr", "tibble", "readr", "magrittr", "DBI")
+  3 | pacotes &lt;- c("shiny", "ggplot2", "gganimate", "gifski", "dplyr", "tidyr", "purrr", "tibble", "readr", "magrittr", "DBI", "jsonlite")
   4 | # Esta verificação usa R base para funcionar mesmo antes de instalar os pacotes.
   5 | faltam &lt;- pacotes[!vapply(pacotes, requireNamespace, logical(1), quietly = TRUE)]
   6 | if (length(faltam)) {
@@ -43,141 +43,117 @@
   2 | library(shiny)
   3 | source("R/modelo.R", encoding = "UTF-8")
   4 | source("R/graficos.R", encoding = "UTF-8")
-  5 | modelo &lt;- preparar_dados(ler_pinguins())
-  6 |
-  7 | ui &lt;- fluidPage(
-  8 |   tags$head(
-  9 |     tags$title("visualização de dados com animação - bicos de pinguin"),
- 10 |     tags$link(rel = "stylesheet", type = "text/css", href = "estilo.css"),
- 11 |     tags$link(rel = "stylesheet", type = "text/css", href = "transformacao.css"),
- 12 |     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")
- 13 |   ),
- 14 |   tags$main(class = "pagina",
- 15 |     tags$header(class = "cabecalho",
- 16 |       tags$p(class = "sobretitulo", "DESAFIO 03 · EXEMPLO EM SHINY + GGANIMATE"),
- 17 |       tags$h1("O grupo muda a história."),
- 18 |       tags$p(class = "abertura", "Uma correlação negativa no conjunto inteiro. Relações positivas dentro de cada espécie."),
- 19 |       tags$div(class = "etiquetas",
- 20 |         tags$span(paste(nrow(modelo$dados), "pinguins analisados")),
- 21 |         tags$span("3 espécies"), tags$span("Mesmos pontos · mesmos eixos")
- 22 |       )
- 23 |     ),
- 24 |     tabsetPanel(id = "aba", type = "pills",
- 25 |       tabPanel("Animação", value = "animacao",
- 26 |         tags$section(class = "painel",
- 27 |           tags$div(class = "titulo-painel",
- 28 |             tags$h2("Uma reta geral. Três relações diferentes."),
- 29 |             tags$p("Comprimento e profundidade do bico: correlação geral e por espécie.")
- 30 |           ),
- 31 |           uiOutput("estado_transicao"),
- 32 |           plotOutput("grafico_transformacao", height = "440px"),
- 33 |           tags$div(class = "controle-slider",
- 34 |             sliderInput("quadro", "Avançar ou voltar na animação",
- 35 |               min = 1, max = length(sequencia_animacao()), value = 1, step = 1,
- 36 |               width = "100%", animate = animationOptions(interval = 1000 / 12, loop = FALSE)),
- 37 |             textOutput("posicao_animacao")
- 38 |           ),
- 39 |           tags$p(class = "nota", "Arraste o controle para frente ou para trás. Os pontos e os eixos permanecem fixos.")
- 40 |         )
- 41 |       ),
- 42 |       tabPanel("Explore as duas leituras", value = "explorar",
- 43 |         tags$section(class = "painel explorador",
- 44 |           tags$div(class = "titulo-painel",
- 45 |             tags$h2("Qual comparação estamos fazendo?"),
- 46 |             radioButtons("modo", NULL,
- 47 |                          choices = c("Todos misturados" = "geral", "Separar por espécie" = "especies"),
- 48 |                          selected = "geral", inline = TRUE)
- 49 |           ),
- 50 |           uiOutput("metricas"),
- 51 |           plotOutput("grafico", height = "480px"),
- 52 |           uiOutput("interpretacao")
- 53 |         )
- 54 |       ),
- 55 |       tabPanel("O que isso significa?", value = "explicacao",
- 56 |         tags$section(class = "painel explicacao",
- 57 |           tags$h2("A conta está certa. O contexto estava escondido."),
- 58 |           tags$p("Ao misturar as espécies, a reta geral combina diferenças entre grupos com as relações dentro de cada grupo. Revelar a espécie muda a pergunta que fazemos aos mesmos dados."),
- 59 |           tags$h3("O que foi comparado"),
- 60 |           tags$p("Comprimento e profundidade do bico, ambos em milímetros. Cada ponto é um pinguim e cada reta é um ajuste linear."),
- 61 |           tags$h3("O que não podemos concluir"),
- 62 |           tags$p("Correlação não demonstra causalidade. As retas descrevem associações nesta amostra; não afirmam que mudar uma medida faria a outra mudar."),
- 63 |           tags$h3("Dados ausentes"),
- 64 |           tags$p(paste0("A base tem 344 registros. Foram excluídos somente ", modelo$excluidos,
- 65 |                         " registros sem as duas medidas necessárias. Espécie, coordenadas e amostra são as mesmas nas duas leituras.")),
- 66 |           tags$h3("Fonte"),
- 67 |           tags$p("Palmer Penguins, dados coletados entre 2007 e 2009. Cópia incluída a partir de datasets::penguins do R 4.5.2, derivada dos dados de Gorman, Williams e Fraser. Dados disponibilizados sob CC0."),
- 68 |           tags$a("Documentação da base no R", href = "https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/penguins.html", target = "_blank", rel = "noopener")
- 69 |         )
- 70 |       )
- 71 |     ),
- 72 |     tags$footer("Protótipo didático · Dados reais · Associação não é causalidade")
- 73 |   )
- 74 | )
- 75 |
- 76 | server &lt;- function(input, output, session) {
- 77 |   quadro_atual &lt;- reactive({
- 78 |     if (is.null(input$quadro)) 1L else as.integer(input$quadro)
- 79 |   })
- 80 |   estado_transformacao &lt;- reactive({
- 81 |     estado_do_quadro(modelo, quadro_atual())
- 82 |   })
- 83 |   output$posicao_animacao &lt;- renderText({
- 84 |     segundos &lt;- (quadro_atual() - 1) / 12
- 85 |     paste0("Quadro ", quadro_atual(), " de ", length(sequencia_animacao()),
- 86 |       " · posição no vídeo: ", formatC(segundos, format = "f", digits = 1, decimal.mark = ","), " s")
- 87 |   })
- 88 |   output$estado_transicao &lt;- renderUI({
- 89 |     tags$p(class = "estado-transformacao", estado_transformacao()$rotulo)
- 90 |   })
- 91 |   output$grafico_transformacao &lt;- renderPlot({
- 92 |     grafico &lt;- plotar_transformacao(modelo, estado_transformacao())
- 93 |     # O rotulo fica em HTML responsivo para nao cortar texto no celular.
- 94 |     grafico$layers &lt;- purrr::discard(grafico$layers, function(camada) inherits(camada$geom, "GeomText"))
- 95 |     # No celular, reduz texto e símbolos para manter os eixos completos.
- 96 |     if (isTRUE(session$clientData$output_grafico_transformacao_width &lt; 640)) {
- 97 |       grafico$layers[[1]]$aes_params$size &lt;- 1.6
- 98 |       grafico &lt;- grafico + ggplot2::theme(
- 99 |         axis.title = ggplot2::element_text(size = 10),
-100 |         axis.text = ggplot2::element_text(size = 9),
-101 |         legend.text = ggplot2::element_text(size = 10),
-102 |         plot.margin = ggplot2::margin(10, 12, 8, 10))
-103 |     }
-104 |     grafico + ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
-105 |       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
-106 |   }, res = 110, execOnResize = TRUE)
-107 |   resumo_ativo &lt;- reactive({
-108 |     if (identical(input$modo, "especies")) {
-109 |       modelo$por_especie
-110 |     } else {
-111 |       tibble::tibble(especie = "Todos", n = nrow(modelo$dados), r = modelo$r_geral)
-112 |     }
-113 |   })
-114 |   output$metricas &lt;- renderUI({
-115 |     resumo &lt;- resumo_ativo()
-116 |     # pmap cria um cartão para cada linha do resumo, usando seus nomes de coluna.
-117 |     tags$div(class = "metricas", purrr::pmap(resumo, function(especie, n, r) {
-118 |       tags$div(class = "metrica", style = paste0("--cor:", cores_pinguins[[especie]]),
-119 |         tags$span(class = "nome-grupo", nomes_pinguins[[especie]]),
-120 |         tags$strong(paste0("r = ", formatC(r, format = "f", digits = 3, decimal.mark = ","))),
-121 |         tags$span(class = "amostra", paste(n, "observações · Pearson"))
-122 |       )
-123 |     }))
-124 |   })
-125 |   output$grafico &lt;- renderPlot({
-126 |     criar_grafico(modelo, separar = identical(input$modo, "especies")) +
-127 |       ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
-128 |       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
-129 |   }, res = 110)
-130 |   output$interpretacao &lt;- renderUI({
-131 |     if (identical(input$modo, "especies")) {
-132 |       tags$p(class = "conclusao", "Dentro de cada espécie, a associação é positiva: as duas medidas tendem a variar juntas. Os pinguins não mudaram; revelamos os grupos.")
-133 |     } else {
-134 |       tags$p(class = "conclusao", "No conjunto misturado, a associação é negativa. Esse resumo sozinho esconde o comportamento dentro das espécies.")
-135 |     }
-136 |   })
-137 | }
-138 |
-139 | shinyApp(ui = ui, server = server)</code>
+  5 | source("R/quadros.R", encoding = "UTF-8")
+  6 | modelo &lt;- preparar_dados(ler_pinguins())
+  7 | quadros_locais &lt;- preparar_quadros(modelo)
+  8 |
+  9 | ui &lt;- fluidPage(
+ 10 |   tags$head(
+ 11 |     tags$title("visualização de dados com animação - bicos de pinguin"),
+ 12 |     tags$link(rel = "stylesheet", type = "text/css", href = "estilo.css"),
+ 13 |     tags$link(rel = "stylesheet", type = "text/css", href = "transformacao.css"),
+ 14 |     tags$script(src = paste0("quadros.js?v=", unname(tools::md5sum("www/quadros.js"))), defer = "defer"),
+ 15 |     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")
+ 16 |   ),
+ 17 |   tags$main(class = "pagina",
+ 18 |     tags$header(class = "cabecalho",
+ 19 |       tags$p(class = "sobretitulo", "DESAFIO 03 · EXEMPLO EM SHINY + GGANIMATE"),
+ 20 |       tags$h1("O grupo muda a história."),
+ 21 |       tags$p(class = "abertura", "Uma correlação negativa no conjunto inteiro. Relações positivas dentro de cada espécie."),
+ 22 |       tags$div(class = "etiquetas",
+ 23 |         tags$span(paste(nrow(modelo$dados), "pinguins analisados")),
+ 24 |         tags$span("3 espécies"), tags$span("Mesmos pontos · mesmos eixos")
+ 25 |       )
+ 26 |     ),
+ 27 |     tabsetPanel(id = "aba", type = "pills",
+ 28 |       tabPanel("Animação", value = "animacao",
+ 29 |         tags$section(class = "painel",
+ 30 |           tags$div(class = "titulo-painel",
+ 31 |             tags$h2("Uma reta geral. Três relações diferentes."),
+ 32 |             tags$p("Comprimento e profundidade do bico: correlação geral e por espécie.")
+ 33 |           ),
+ 34 |           tags$p(id = "estado_transicao", class = "estado-transformacao", rotulo_correlacao(modelo, FALSE)),
+ 35 |           tags$div(id = "grafico_transformacao", class = "quadros-animacao",
+ 36 |             `data-manifesto` = quadros_locais$manifesto,
+ 37 |             tags$img(src = quadros_locais$primeiro, alt = "Gráfico da animação dos pinguins")),
+ 38 |           tags$div(id = "controle_quadros", class = "controle-slider",
+ 39 |             sliderInput("quadro", "Avançar ou voltar na animação",
+ 40 |               min = 1, max = length(sequencia_animacao()), value = 1, step = 1,
+ 41 |               width = "100%", animate = animationOptions(interval = 1000 / 12, loop = FALSE)),
+ 42 |             tags$div(id = "posicao_animacao", "Quadro 1 de 180 · posição no vídeo: 0,0 s"),
+ 43 |             tags$p(id = "carregamento_quadros", role = "status", `aria-live` = "polite", "Carregando quadros…")
+ 44 |           ),
+ 45 |           tags$p(class = "nota", "Arraste o controle para frente ou para trás. Os pontos e os eixos permanecem fixos.")
+ 46 |         )
+ 47 |       ),
+ 48 |       tabPanel("Explore as duas leituras", value = "explorar",
+ 49 |         tags$section(class = "painel explorador",
+ 50 |           tags$div(class = "titulo-painel",
+ 51 |             tags$h2("Qual comparação estamos fazendo?"),
+ 52 |             radioButtons("modo", NULL,
+ 53 |                          choices = c("Todos misturados" = "geral", "Separar por espécie" = "especies"),
+ 54 |                          selected = "geral", inline = TRUE)
+ 55 |           ),
+ 56 |           uiOutput("metricas"),
+ 57 |           plotOutput("grafico", height = "480px"),
+ 58 |           uiOutput("interpretacao")
+ 59 |         )
+ 60 |       ),
+ 61 |       tabPanel("O que isso significa?", value = "explicacao",
+ 62 |         tags$section(class = "painel explicacao",
+ 63 |           tags$h2("A conta está certa. O contexto estava escondido."),
+ 64 |           tags$p("Ao misturar as espécies, a reta geral combina diferenças entre grupos com as relações dentro de cada grupo. Revelar a espécie muda a pergunta que fazemos aos mesmos dados."),
+ 65 |           tags$h3("O que foi comparado"),
+ 66 |           tags$p("Comprimento e profundidade do bico, ambos em milímetros. Cada ponto é um pinguim e cada reta é um ajuste linear."),
+ 67 |           tags$h3("O que não podemos concluir"),
+ 68 |           tags$p("Correlação não demonstra causalidade. As retas descrevem associações nesta amostra; não afirmam que mudar uma medida faria a outra mudar."),
+ 69 |           tags$h3("Dados ausentes"),
+ 70 |           tags$p(paste0("A base tem 344 registros. Foram excluídos somente ", modelo$excluidos,
+ 71 |                         " registros sem as duas medidas necessárias. Espécie, coordenadas e amostra são as mesmas nas duas leituras.")),
+ 72 |           tags$h3("Fonte"),
+ 73 |           tags$p("Palmer Penguins, dados coletados entre 2007 e 2009. Cópia incluída a partir de datasets::penguins do R 4.5.2, derivada dos dados de Gorman, Williams e Fraser. Dados disponibilizados sob CC0."),
+ 74 |           tags$a("Documentação da base no R", href = "https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/penguins.html", target = "_blank", rel = "noopener")
+ 75 |         )
+ 76 |       )
+ 77 |     ),
+ 78 |     tags$footer("Protótipo didático · Dados reais · Associação não é causalidade")
+ 79 |   )
+ 80 | )
+ 81 |
+ 82 | server &lt;- function(input, output, session) {
+ 83 |   resumo_ativo &lt;- reactive({
+ 84 |     if (identical(input$modo, "especies")) {
+ 85 |       modelo$por_especie
+ 86 |     } else {
+ 87 |       tibble::tibble(especie = "Todos", n = nrow(modelo$dados), r = modelo$r_geral)
+ 88 |     }
+ 89 |   })
+ 90 |   output$metricas &lt;- renderUI({
+ 91 |     resumo &lt;- resumo_ativo()
+ 92 |     # pmap cria um cartão para cada linha do resumo, usando seus nomes de coluna.
+ 93 |     tags$div(class = "metricas", purrr::pmap(resumo, function(especie, n, r) {
+ 94 |       tags$div(class = "metrica", style = paste0("--cor:", cores_pinguins[[especie]]),
+ 95 |         tags$span(class = "nome-grupo", nomes_pinguins[[especie]]),
+ 96 |         tags$strong(paste0("r = ", formatC(r, format = "f", digits = 3, decimal.mark = ","))),
+ 97 |         tags$span(class = "amostra", paste(n, "observações · Pearson"))
+ 98 |       )
+ 99 |     }))
+100 |   })
+101 |   output$grafico &lt;- renderPlot({
+102 |     criar_grafico(modelo, separar = identical(input$modo, "especies")) +
+103 |       ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
+104 |       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
+105 |   }, res = 110)
+106 |   output$interpretacao &lt;- renderUI({
+107 |     if (identical(input$modo, "especies")) {
+108 |       tags$p(class = "conclusao", "Dentro de cada espécie, a associação é positiva: as duas medidas tendem a variar juntas. Os pinguins não mudaram; revelamos os grupos.")
+109 |     } else {
+110 |       tags$p(class = "conclusao", "No conjunto misturado, a associação é negativa. Esse resumo sozinho esconde o comportamento dentro das espécies.")
+111 |     }
+112 |   })
+113 | }
+114 |
+115 | shinyApp(ui = ui, server = server)</code>
       </pre>
     </details>
     <details>
@@ -452,6 +428,164 @@
 217 |     purrr::map(function(nome) purrr::map_dfr(estados, nome))
 218 |   plotar_transformacao(modelo, dados) + gganimate::transition_manual(quadro)
 219 | }</code>
+      </pre>
+    </details>
+    <details>
+      <summary>R/quadros.R</summary>
+      <pre>
+        <code>  1 | grafico_do_quadro &lt;- function(modelo, quadro, compacto = FALSE) {
+  2 |   grafico &lt;- plotar_transformacao(modelo, estado_do_quadro(modelo, quadro))
+  3 |   # O rótulo fica em HTML; o desenho é o mesmo da animação aprovada.
+  4 |   grafico$layers &lt;- purrr::discard(grafico$layers, function(camada) inherits(camada$geom, "GeomText"))
+  5 |   if (compacto) {
+  6 |     grafico$layers[[1]]$aes_params$size &lt;- 1.6
+  7 |     grafico &lt;- grafico + ggplot2::theme(
+  8 |       axis.title = ggplot2::element_text(size = 10),
+  9 |       axis.text = ggplot2::element_text(size = 9),
+ 10 |       legend.text = ggplot2::element_text(size = 10),
+ 11 |       plot.margin = ggplot2::margin(10, 12, 8, 10))
+ 12 |   }
+ 13 |   grafico + ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
+ 14 |     ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
+ 15 | }
+ 16 |
+ 17 | preparar_quadros &lt;- function(modelo) {
+ 18 |   # Invalida o cache quando os dados ou o código dos gráficos mudam.
+ 19 |   assinatura &lt;- tempfile(fileext = ".txt")
+ 20 |   on.exit(unlink(assinatura), add = TRUE)
+ 21 |   writeLines(unname(tools::md5sum(c("dados/pinguins.csv", "R/modelo.R",
+ 22 |                                   "R/graficos.R", "R/quadros.R"))), assinatura)
+ 23 |   versao &lt;- substr(unname(tools::md5sum(assinatura)), 1, 12)
+ 24 |   pasta &lt;- file.path("www", "quadros", versao)
+ 25 |   manifesto &lt;- file.path(pasta, "manifesto.json")
+ 26 |   progressos &lt;- sequencia_animacao()
+ 27 |   primeiros &lt;- match(unique(progressos), progressos)
+ 28 |   arquivos &lt;- sprintf("quadro-%03d.png", seq_along(primeiros))
+ 29 |   # As pausas reutilizam imagens: são 180 posições, não 180 desenhos diferentes.
+ 30 |   mapa &lt;- arquivos[match(progressos, unique(progressos))]
+ 31 |   tamanhos &lt;- tibble::tribble(
+ 32 |     ~nome, ~largura, ~altura, ~compacto,
+ 33 |     "desktop", 1060, 440, FALSE,
+ 34 |     "compacto", 360, 320, TRUE)
+ 35 |   esperados &lt;- unlist(purrr::map(tamanhos$nome, function(nome) file.path(pasta, nome, arquivos)))
+ 36 |   if (!file.exists(manifesto) || !all(file.exists(esperados))) {
+ 37 |     message("Preparando os quadros locais. Isso só é necessário quando os gráficos mudam.")
+ 38 |     purrr::pwalk(tamanhos, function(nome, largura, altura, compacto) {
+ 39 |       destino &lt;- file.path(pasta, nome)
+ 40 |       dir.create(destino, recursive = TRUE, showWarnings = FALSE)
+ 41 |       purrr::walk(seq_along(primeiros), function(indice) {
+ 42 |         ggplot2::ggsave(file.path(destino, arquivos[[indice]]),
+ 43 |           grafico_do_quadro(modelo, primeiros[[indice]], compacto),
+ 44 |           width = largura, height = altura, units = "px", dpi = 110,
+ 45 |           bg = "#F8FAFC", limitsize = FALSE)
+ 46 |       })
+ 47 |     })
+ 48 |     rotulos &lt;- ifelse(seq_along(progressos) &lt;= length(progressos) / 2,
+ 49 |                      rotulo_correlacao(modelo, FALSE), rotulo_correlacao(modelo, TRUE))
+ 50 |     jsonlite::write_json(list(total = length(progressos), fps = 12,
+ 51 |       quadros = unname(mapa), rotulos = unname(rotulos)),
+ 52 |       manifesto, auto_unbox = TRUE, pretty = TRUE)
+ 53 |   }
+ 54 |   list(manifesto = paste0("quadros/", versao, "/manifesto.json"),
+ 55 |        primeiro = paste0("quadros/", versao, "/desktop/", arquivos[[1]]),
+ 56 |        total = length(progressos))
+ 57 | }</code>
+      </pre>
+    </details>
+    <details>
+      <summary>www/quadros.js</summary>
+      <pre>
+        <code>  1 | /* O R calcula e desenha os quadros. Aqui apenas escolhemos a imagem já carregada. */
+  2 | (() =&gt; {
+  3 |   async function iniciar() {
+  4 |     const painel = document.getElementById("grafico_transformacao");
+  5 |     const entrada = document.getElementById("quadro");
+  6 |     if (!painel || !entrada) return;
+  7 |     const slider = window.jQuery?.(entrada).data("ionRangeSlider");
+  8 |     if (!slider) return setTimeout(iniciar, 50);
+  9 |
+ 10 |     const carregamento = document.getElementById("carregamento_quadros");
+ 11 |     const controle = document.getElementById("controle_quadros");
+ 12 |     const posicao = document.getElementById("posicao_animacao");
+ 13 |     const rotulo = document.getElementById("estado_transicao");
+ 14 |     const pequeno = matchMedia("(max-width: 700px)");
+ 15 |     const bancos = {};
+ 16 |     let manifesto, banco, pronto = false, geracao = 0;
+ 17 |
+ 18 |     function mostrar(quadro) {
+ 19 |       if (!pronto) return;
+ 20 |       const numero = Math.max(1, Math.min(manifesto.total, Math.round(Number(quadro))));
+ 21 |       const imagem = banco.get(manifesto.quadros[numero - 1]);
+ 22 |       imagem.alt = `Gráfico da animação: quadro ${numero} de ${manifesto.total}`;
+ 23 |       if (painel.firstElementChild !== imagem) painel.replaceChildren(imagem);
+ 24 |       painel.dataset.quadro = String(numero);
+ 25 |       rotulo.textContent = manifesto.rotulos[numero - 1];
+ 26 |       const segundos = ((numero - 1) / manifesto.fps).toFixed(1).replace(".", ",");
+ 27 |       posicao.textContent = `Quadro ${numero} de ${manifesto.total} · posição no vídeo: ${segundos} s`;
+ 28 |     }
+ 29 |
+ 30 |     function habilitar(valor) {
+ 31 |       pronto = valor;
+ 32 |       slider.update({disable: !valor});
+ 33 |       controle.classList.toggle("quadros-carregando", !valor);
+ 34 |       painel.dataset.quadrosProntos = String(valor);
+ 35 |     }
+ 36 |
+ 37 |     async function carregar() {
+ 38 |       const atual = ++geracao;
+ 39 |       const tamanho = pequeno.matches ? "compacto" : "desktop";
+ 40 |       habilitar(false);
+ 41 |       if (!bancos[tamanho]) {
+ 42 |         const imagens = new Map();
+ 43 |         const arquivos = [...new Set(manifesto.quadros)];
+ 44 |         let proximo = 0, carregados = 0;
+ 45 |         carregamento.textContent = "Carregando quadros…";
+ 46 |         async function trabalhador() {
+ 47 |           while (proximo &lt; arquivos.length &amp;&amp; atual === geracao) {
+ 48 |             const arquivo = arquivos[proximo++];
+ 49 |             const imagem = new Image();
+ 50 |             imagem.decoding = "async";
+ 51 |             imagem.src = new URL(`${tamanho}/${arquivo}`, new URL(painel.dataset.manifesto, document.baseURI)).href;
+ 52 |             await imagem.decode();
+ 53 |             imagens.set(arquivo, imagem);
+ 54 |             carregamento.textContent = `Carregando quadros: ${++carregados} de ${arquivos.length}`;
+ 55 |           }
+ 56 |         }
+ 57 |         // Limita as transferências simultâneas sem bloquear a página.
+ 58 |         await Promise.all(Array.from({length: 6}, trabalhador));
+ 59 |         if (atual !== geracao) return;
+ 60 |         bancos[tamanho] = imagens;
+ 61 |       }
+ 62 |       banco = bancos[tamanho];
+ 63 |       habilitar(true);
+ 64 |       mostrar(slider.result.from);
+ 65 |       carregamento.textContent = "Quadros carregados. Pronto para arrastar.";
+ 66 |     }
+ 67 |
+ 68 |     function falhou(erro) {
+ 69 |       habilitar(false);
+ 70 |       carregamento.textContent = "Não foi possível carregar os quadros. Recarregue a página.";
+ 71 |       console.error("Carregamento da animação:", erro);
+ 72 |     }
+ 73 |
+ 74 |     try {
+ 75 |       habilitar(false);
+ 76 |       const resposta = await fetch(painel.dataset.manifesto);
+ 77 |       if (!resposta.ok) throw new Error(`Manifesto: HTTP ${resposta.status}`);
+ 78 |       manifesto = await resposta.json();
+ 79 |       window.jQuery(entrada).on("input.quadros change.quadros", () =&gt; mostrar(slider.result.from));
+ 80 |       slider.update({onChange: dados =&gt; mostrar(dados.from)});
+ 81 |       // Um toque pode adiar o evento da biblioteca; o valor já está calculado ao soltar.
+ 82 |       controle.addEventListener("pointerup", () =&gt; mostrar(slider.result.from));
+ 83 |       pequeno.addEventListener("change", () =&gt; carregar().catch(falhou));
+ 84 |       await carregar();
+ 85 |     } catch (erro) {
+ 86 |       falhou(erro);
+ 87 |     }
+ 88 |   }
+ 89 |   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", iniciar);
+ 90 |   else iniciar();
+ 91 | })();</code>
       </pre>
     </details>
     <details>

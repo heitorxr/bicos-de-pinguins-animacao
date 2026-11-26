@@ -2,13 +2,16 @@ if (dir.exists(".biblioteca")) .libPaths(c(normalizePath(".biblioteca"), .libPat
 library(shiny)
 source("R/modelo.R", encoding = "UTF-8")
 source("R/graficos.R", encoding = "UTF-8")
+source("R/quadros.R", encoding = "UTF-8")
 modelo <- preparar_dados(ler_pinguins())
+quadros_locais <- preparar_quadros(modelo)
 
 ui <- fluidPage(
   tags$head(
     tags$title("visualização de dados com animação - bicos de pinguin"),
     tags$link(rel = "stylesheet", type = "text/css", href = "estilo.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "transformacao.css"),
+    tags$script(src = paste0("quadros.js?v=", unname(tools::md5sum("www/quadros.js"))), defer = "defer"),
     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")
   ),
   tags$main(class = "pagina",
@@ -28,13 +31,16 @@ ui <- fluidPage(
             tags$h2("Uma reta geral. Três relações diferentes."),
             tags$p("Comprimento e profundidade do bico: correlação geral e por espécie.")
           ),
-          uiOutput("estado_transicao"),
-          plotOutput("grafico_transformacao", height = "440px"),
-          tags$div(class = "controle-slider",
+          tags$p(id = "estado_transicao", class = "estado-transformacao", rotulo_correlacao(modelo, FALSE)),
+          tags$div(id = "grafico_transformacao", class = "quadros-animacao",
+            `data-manifesto` = quadros_locais$manifesto,
+            tags$img(src = quadros_locais$primeiro, alt = "Gráfico da animação dos pinguins")),
+          tags$div(id = "controle_quadros", class = "controle-slider",
             sliderInput("quadro", "Avançar ou voltar na animação",
               min = 1, max = length(sequencia_animacao()), value = 1, step = 1,
               width = "100%", animate = animationOptions(interval = 1000 / 12, loop = FALSE)),
-            textOutput("posicao_animacao")
+            tags$div(id = "posicao_animacao", "Quadro 1 de 180 · posição no vídeo: 0,0 s"),
+            tags$p(id = "carregamento_quadros", role = "status", `aria-live` = "polite", "Carregando quadros…")
           ),
           tags$p(class = "nota", "Arraste o controle para frente ou para trás. Os pontos e os eixos permanecem fixos.")
         )
@@ -74,36 +80,6 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  quadro_atual <- reactive({
-    if (is.null(input$quadro)) 1L else as.integer(input$quadro)
-  })
-  estado_transformacao <- reactive({
-    estado_do_quadro(modelo, quadro_atual())
-  })
-  output$posicao_animacao <- renderText({
-    segundos <- (quadro_atual() - 1) / 12
-    paste0("Quadro ", quadro_atual(), " de ", length(sequencia_animacao()),
-      " · posição no vídeo: ", formatC(segundos, format = "f", digits = 1, decimal.mark = ","), " s")
-  })
-  output$estado_transicao <- renderUI({
-    tags$p(class = "estado-transformacao", estado_transformacao()$rotulo)
-  })
-  output$grafico_transformacao <- renderPlot({
-    grafico <- plotar_transformacao(modelo, estado_transformacao())
-    # O rotulo fica em HTML responsivo para nao cortar texto no celular.
-    grafico$layers <- purrr::discard(grafico$layers, function(camada) inherits(camada$geom, "GeomText"))
-    # No celular, reduz texto e símbolos para manter os eixos completos.
-    if (isTRUE(session$clientData$output_grafico_transformacao_width < 640)) {
-      grafico$layers[[1]]$aes_params$size <- 1.6
-      grafico <- grafico + ggplot2::theme(
-        axis.title = ggplot2::element_text(size = 10),
-        axis.text = ggplot2::element_text(size = 9),
-        legend.text = ggplot2::element_text(size = 10),
-        plot.margin = ggplot2::margin(10, 12, 8, 10))
-    }
-    grafico + ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
-      ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
-  }, res = 110, execOnResize = TRUE)
   resumo_ativo <- reactive({
     if (identical(input$modo, "especies")) {
       modelo$por_especie

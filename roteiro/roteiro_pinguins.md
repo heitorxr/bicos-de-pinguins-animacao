@@ -4,7 +4,7 @@ Proposta para revisão. O texto foi preparado para leitura em voz alta, com a sk
 
 ## 1. Antes da animação: medidas e espécies
 
-**Na tela:** página `apoio_antes.png`. Aponte primeiro para as setas das medidas. Depois, mostre as espécies: Chinstrap à esquerda, Gentoo ao centro e Adélie à direita na ilustração original. Os nomes sob as imagens usam as cores do gráfico.
+**Na tela:** página `apoio_antes_cores_conferidas.png`. Aponte primeiro para as setas das medidas. Depois, mostre as espécies: Chinstrap à esquerda, Gentoo ao centro e Adélie à direita na ilustração original. Os nomes sob as imagens usam as cores do gráfico.
 
 **Fala:**
 
@@ -30,7 +30,7 @@ Separando por espécie, a correlação é positiva nas três.
 
 ## 3. Depois da animação: por que o sinal muda
 
-**Na tela:** página `apoio_depois.png`. Compare o gráfico geral, à esquerda, com o gráfico por espécie, à direita. Ao mencionar Gentoo e Adélie, aponte para os grupos verde e laranja.
+**Na tela:** página `apoio_depois_cores_conferidas.png`. Compare o gráfico geral, à esquerda, com o gráfico por espécie, à direita. Ao mencionar Gentoo e Adélie, aponte para os grupos verde e laranja.
 
 **Fala:**
 
@@ -48,7 +48,7 @@ O gráfico mostra associação. Ele não prova que mudar uma dessas medidas caus
 
 ## 4. Fecho para a apresentação completa: mostrar o código
 
-Este trecho pode vir no fim, para atender à demonstração do Shiny e dos códigos mencionada no LEIA-ME do projeto. Não é necessário ler caminhos ou nomes de funções em voz alta.
+Este trecho pode vir no fim, para atender à demonstração do Shiny e dos códigos. Não é necessário ler caminhos ou nomes de funções em voz alta.
 
 **Na tela:** mostre `R/modelo.R`, depois `R/graficos.R` e, por último, o aplicativo aberto.
 
@@ -75,6 +75,6 @@ A base original tem 344 registros. Excluímos dois sem as medidas necessárias, 
 - Ilustrações: Artwork by @allison_horst. Uso didático autorizado na página Art do projeto palmerpenguins. A página de medidas usa um recorte da ilustração original, sem alterar as setas ou a posição das medidas.
 - Definição das medidas e ilustrações: site oficial do pacote palmerpenguins, seção Bill dimensions e página Art.
 - Interpretação da inversão: Horst, Hill e Gorman (2022), *Palmer Archipelago Penguins Data in the palmerpenguins R Package — An Alternative to Anderson's Irises*, seção sobre o paradoxo de Simpson, figura 5.
-- Endereços e proveniência dos arquivos: `fontes_imagens.md`.
+- Endereços e proveniência dos arquivos: `fontes_cores_conferidas.md`.
 
 Roteiro e montagem das páginas preparados com assistência de IA, para revisão do autor. Nenhum texto foi publicado nem inserido automaticamente no aplicativo.

@@ -1,7 +1,7 @@
 .libPaths(c(normalizePath(".biblioteca"), .libPaths()))
 
 # Lê os arquivos principais do projeto, sem executar o conteúdo deles.
-arquivos <- c("iniciar.R", "preparar.R", "app.R", "R/modelo.R", "R/graficos.R", "gerar_animacao.R")
+arquivos <- c("iniciar.R", "preparar.R", "app.R", "R/modelo.R", "R/graficos.R", "R/quadros.R", "www/quadros.js", "gerar_animacao.R")
 blocos <- purrr::imap(arquivos, function(arquivo, indice) {
   linhas <- readr::read_lines(arquivo)
   codigo <- sprintf("%3d | %s", seq_along(linhas), linhas) |>

@@ -1,4 +1,3 @@
-.controles-transformacao { padding: 0 27px 16px; }
 .controle-slider { padding: 12px 27px 18px; }
 #posicao_animacao { color: #526675; font-size: 13px; margin-bottom: 5px; }
 .controle-slider .shiny-input-container { width: 100%; }
@@ -13,8 +12,11 @@
   overflow-wrap: anywhere;
 }
 @media (max-width: 640px) {
-  .controles-transformacao { padding: 0 17px 14px; }
   .controle-slider { padding: 10px 17px 16px; }
   #grafico_transformacao { height: 320px !important; }
-  .controles-transformacao .radio-inline { display: block; margin-left: 0; }
 }
+
+.quadros-animacao { height: 440px; background: #F8FAFC; }
+.quadros-animacao img { display: block; width: 100%; height: 100%; object-fit: contain; }
+#carregamento_quadros { color: #526675; font-size: 12px; margin: 4px 0 0; }
+.quadros-carregando .slider-animate-button { pointer-events: none; opacity: .4; }
