@@ -1,7 +1,7 @@
 .libPaths(c(normalizePath(".biblioteca"), .libPaths()))
 
-# Lê somente os três arquivos da animação, sem executar o conteúdo deles.
-arquivos <- c("gerar_animacao.R", "R/modelo.R", "R/graficos.R")
+# Lê os arquivos principais do projeto, sem executar o conteúdo deles.
+arquivos <- c("iniciar.R", "preparar.R", "app.R", "R/modelo.R", "R/graficos.R", "gerar_animacao.R")
 blocos <- purrr::imap(arquivos, function(arquivo, indice) {
   linhas <- readr::read_lines(arquivo)
   codigo <- sprintf("%3d | %s", seq_along(linhas), linhas) |>

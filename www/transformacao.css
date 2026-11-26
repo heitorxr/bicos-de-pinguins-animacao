@@ -1,5 +1,7 @@
 .controles-transformacao { padding: 0 27px 16px; }
-.controle-slider { padding: 12px 27px 0; }
+.controle-slider { padding: 12px 27px 18px; }
+#posicao_animacao { color: #526675; font-size: 13px; margin-bottom: 5px; }
+.controle-slider .shiny-input-container { width: 100%; }
 .estado-transformacao {
   margin: 12px 0 6px;
   padding: 11px 14px;
@@ -12,6 +14,7 @@
 }
 @media (max-width: 640px) {
   .controles-transformacao { padding: 0 17px 14px; }
-  .controle-slider { padding: 10px 17px 0; }
+  .controle-slider { padding: 10px 17px 16px; }
+  #grafico_transformacao { height: 320px !important; }
   .controles-transformacao .radio-inline { display: block; margin-left: 0; }
 }

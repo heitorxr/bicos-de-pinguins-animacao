@@ -25,28 +25,18 @@ ui <- fluidPage(
       tabPanel("Animação", value = "animacao",
         tags$section(class = "painel",
           tags$div(class = "titulo-painel",
-            tags$h2("Olhe primeiro o conjunto. Depois, os grupos."),
-            tags$p("Três segmentos iguais começam colados, formando a reta geral. Eles se separam pelo próprio movimento, girando e mudando de tamanho e cor ao mesmo tempo. Os pontos ficam no mesmo lugar.")
+            tags$h2("Uma reta geral. Três relações diferentes."),
+            tags$p("Comprimento e profundidade do bico: correlação geral e por espécie.")
           ),
-          tags$div(class = "controles-transformacao",
-            radioButtons("reproducao", NULL,
-              choices = c("Assistir à animação" = "gif", "Controlar a divisão da reta" = "manual"),
-              selected = "gif", inline = TRUE)
+          uiOutput("estado_transicao"),
+          plotOutput("grafico_transformacao", height = "440px"),
+          tags$div(class = "controle-slider",
+            sliderInput("quadro", "Avançar ou voltar na animação",
+              min = 1, max = length(sequencia_animacao()), value = 1, step = 1,
+              width = "100%", animate = animationOptions(interval = 1000 / 12, loop = FALSE)),
+            textOutput("posicao_animacao")
           ),
-          conditionalPanel("input.reproducao == 'gif'",
-            tags$img(src = "pinguins.gif", class = "animacao",
-              alt = "Três segmentos inicialmente unidos se transformam simultaneamente nas retas por espécie, sem afastamento prévio, com os pinguins fixos.")
-          ),
-          conditionalPanel("input.reproducao == 'manual'",
-            tags$div(class = "controle-slider",
-              sliderInput("progresso", "Da reta geral às retas por espécie",
-                min = 0, max = 100, value = 0, step = 1,
-                animate = animationOptions(interval = 180, loop = FALSE)),
-              uiOutput("estado_transicao")
-            ),
-            plotOutput("grafico_transformacao", height = "480px")
-          ),
-          tags$p(class = "nota", "Transição didática, não passagem do tempo. As medidas dos pinguins não são alteradas.")
+          tags$p(class = "nota", "Arraste o controle para frente ou para trás. Os pontos e os eixos permanecem fixos.")
         )
       ),
       tabPanel("Explore as duas leituras", value = "explorar",
@@ -84,22 +74,36 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  progresso_atual <- reactive({
-    if (is.null(input$progresso)) 0 else input$progresso / 100
+  quadro_atual <- reactive({
+    if (is.null(input$quadro)) 1L else as.integer(input$quadro)
   })
   estado_transformacao <- reactive({
-    montar_transformacao(modelo, progresso_atual())
+    estado_do_quadro(modelo, quadro_atual())
+  })
+  output$posicao_animacao <- renderText({
+    segundos <- (quadro_atual() - 1) / 12
+    paste0("Quadro ", quadro_atual(), " de ", length(sequencia_animacao()),
+      " · posição no vídeo: ", formatC(segundos, format = "f", digits = 1, decimal.mark = ","), " s")
   })
   output$estado_transicao <- renderUI({
     tags$p(class = "estado-transformacao", estado_transformacao()$rotulo)
   })
   output$grafico_transformacao <- renderPlot({
-    grafico <- criar_grafico_transformacao(modelo, progresso_atual())
+    grafico <- plotar_transformacao(modelo, estado_transformacao())
     # O rotulo fica em HTML responsivo para nao cortar texto no celular.
     grafico$layers <- purrr::discard(grafico$layers, function(camada) inherits(camada$geom, "GeomText"))
+    # No celular, reduz texto e símbolos para manter os eixos completos.
+    if (isTRUE(session$clientData$output_grafico_transformacao_width < 640)) {
+      grafico$layers[[1]]$aes_params$size <- 1.6
+      grafico <- grafico + ggplot2::theme(
+        axis.title = ggplot2::element_text(size = 10),
+        axis.text = ggplot2::element_text(size = 9),
+        legend.text = ggplot2::element_text(size = 10),
+        plot.margin = ggplot2::margin(10, 12, 8, 10))
+    }
     grafico + ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
-  }, res = 110)
+  }, res = 110, execOnResize = TRUE)
   resumo_ativo <- reactive({
     if (identical(input$modo, "especies")) {
       modelo$por_especie

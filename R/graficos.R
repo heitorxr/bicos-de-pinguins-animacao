@@ -187,24 +187,31 @@ criar_grafico_transformacao <- function(modelo, progresso) {
   plotar_transformacao(modelo, estado)
 }
 
+sequencia_animacao <- function() {
+  # A mesma sequência é usada pelo GIF e pelo slider do Shiny.
+  c(rep(0, 18), seq(0, 1, length.out = 138), rep(1, 24))
+}
+
+estado_do_quadro <- function(modelo, quadro) {
+  progressos <- sequencia_animacao()
+  if (length(quadro) != 1L || !is.finite(quadro) ||
+      quadro != as.integer(quadro) || quadro < 1 || quadro > length(progressos)) {
+    stop("Escolha um quadro válido da animação.")
+  }
+  estado <- montar_transformacao(modelo, progressos[[quadro]])
+  # A correlação troca na metade do vídeo, contando também as pausas.
+  estado$rotulo <- rotulo_correlacao(modelo, por_especie = quadro > length(progressos) / 2)
+  estado$rotulos <- tibble::tibble(rotulo = estado$rotulo)
+  estado
+}
+
 montar_animacao <- function(modelo) {
-  # Pausas nos extremos e movimento calculado quadro a quadro.
-  progressos <- c(
-    rep(0, 18), # Pausa na reta geral.
-    seq(0, 1, length.out = 138), # Transição até as retas por espécie.
-    rep(1, 24) # Pausa no resultado final.
-  )
-  # imap percorre o progresso junto com o número de cada quadro.
-  estados <- purrr::imap(progressos, function(progresso, quadro) {
-    estado <- montar_transformacao(modelo, progresso)
-    # A troca considera a duração total, incluindo as pausas nos extremos.
-    estado$rotulos <- tibble::tibble(rotulo = rotulo_correlacao(modelo,
-      por_especie = quadro > length(progressos) / 2))
+  estados <- purrr::imap(sequencia_animacao(), function(progresso, quadro) {
+    estado <- estado_do_quadro(modelo, quadro)
     purrr::map(estado[c("pontos", "ramos", "referencia", "rotulos")], function(tabela) {
       dplyr::mutate(tabela, quadro = quadro)
     })
   })
-  # Junta os quadros, mantendo uma tabela para cada componente do desenho.
   dados <- c("pontos", "ramos", "referencia", "rotulos") |>
     purrr::set_names() |>
     purrr::map(function(nome) purrr::map_dfr(estados, nome))

@@ -13,40 +13,171 @@
   <body>
     <h1>Revisão do código — animação dos pinguins</h1>
     <p>Clique no nome de cada arquivo para abrir ou fechar o código completo. Somente leitura; nada é executado nesta página.</p>
-    <p>Cópia gerada em 24/11/2026 09:19 -03</p>
+    <p>Cópia gerada em 26/11/2026 14:51 -03</p>
     <details open="open">
-      <summary>gerar_animacao.R</summary>
+      <summary>iniciar.R</summary>
       <pre>
         <code>  1 | source("preparar.R", encoding = "UTF-8")
-  2 | source("R/modelo.R", encoding = "UTF-8")
-  3 | source("R/graficos.R", encoding = "UTF-8")
-  4 |
-  5 | # Usa a mesma amostra nos gráficos geral, por espécie e em todos os quadros.
-  6 | modelo &lt;- preparar_dados(ler_pinguins())
-  7 | dir.create("www", showWarnings = FALSE)
-  8 |
-  9 | # Salva os gráficos de apoio, sem precisar abrir o aplicativo.
- 10 | ggplot2::ggsave("www/todos.png", criar_grafico(modelo, FALSE),
- 11 |                 width = 10, height = 6.5, dpi = 120)
- 12 | ggplot2::ggsave("www/especies.png", criar_grafico(modelo, TRUE),
- 13 |                 width = 10, height = 6.5, dpi = 120)
- 14 | purrr::walk2(c(0, 0.18, 0.59, 1), c("inicio", "divisao", "meio", "fim"), function(valor, nome) {
- 15 |   ggplot2::ggsave(paste0("www/transformacao_", nome, ".png"),
- 16 |     criar_grafico_transformacao(modelo, valor), width = 10, height = 6.5, dpi = 120)
- 17 | })
- 18 |
- 19 | # O GIF é exportado diretamente pelo gganimate; os pontos permanecem fixos.
- 20 | animacao &lt;- gganimate::animate(
- 21 |   montar_animacao(modelo),
- 22 |   nframes = 180,
- 23 |   fps = 12,
- 24 |   width = 960,
- 25 |   height = 640,
- 26 |   res = 105,
- 27 |   renderer = gganimate::gifski_renderer("www/pinguins.gif", loop = TRUE)
- 28 | )
- 29 | stopifnot(file.exists("www/pinguins.gif"), file.info("www/pinguins.gif")$size &gt; 1000)
- 30 | cat("Animacao real do gganimate gerada em www/pinguins.gif\n")</code>
+  2 | if (!file.exists("www/pinguins.gif")) source("gerar_animacao.R", encoding = "UTF-8")
+  3 | porta &lt;- as.integer(Sys.getenv("PINGUINS_PORTA", "4287"))
+  4 | shiny::runApp(".", host = "127.0.0.1", port = porta, launch.browser = interactive())</code>
+      </pre>
+    </details>
+    <details>
+      <summary>preparar.R</summary>
+      <pre>
+        <code>  1 | dir.create(".biblioteca", recursive = TRUE, showWarnings = FALSE)
+  2 | .libPaths(c(normalizePath(".biblioteca"), .libPaths()))
+  3 | pacotes &lt;- c("shiny", "ggplot2", "gganimate", "gifski", "dplyr", "tidyr", "purrr", "tibble", "readr", "magrittr", "DBI")
+  4 | # Esta verificação usa R base para funcionar mesmo antes de instalar os pacotes.
+  5 | faltam &lt;- pacotes[!vapply(pacotes, requireNamespace, logical(1), quietly = TRUE)]
+  6 | if (length(faltam)) {
+  7 |   install.packages(faltam, lib = .libPaths()[1], repos = "https://cloud.r-project.org", type = "binary")
+  8 | }</code>
+      </pre>
+    </details>
+    <details>
+      <summary>app.R</summary>
+      <pre>
+        <code>  1 | if (dir.exists(".biblioteca")) .libPaths(c(normalizePath(".biblioteca"), .libPaths()))
+  2 | library(shiny)
+  3 | source("R/modelo.R", encoding = "UTF-8")
+  4 | source("R/graficos.R", encoding = "UTF-8")
+  5 | modelo &lt;- preparar_dados(ler_pinguins())
+  6 |
+  7 | ui &lt;- fluidPage(
+  8 |   tags$head(
+  9 |     tags$title("visualização de dados com animação - bicos de pinguin"),
+ 10 |     tags$link(rel = "stylesheet", type = "text/css", href = "estilo.css"),
+ 11 |     tags$link(rel = "stylesheet", type = "text/css", href = "transformacao.css"),
+ 12 |     tags$meta(name = "viewport", content = "width=device-width, initial-scale=1")
+ 13 |   ),
+ 14 |   tags$main(class = "pagina",
+ 15 |     tags$header(class = "cabecalho",
+ 16 |       tags$p(class = "sobretitulo", "DESAFIO 03 · EXEMPLO EM SHINY + GGANIMATE"),
+ 17 |       tags$h1("O grupo muda a história."),
+ 18 |       tags$p(class = "abertura", "Uma correlação negativa no conjunto inteiro. Relações positivas dentro de cada espécie."),
+ 19 |       tags$div(class = "etiquetas",
+ 20 |         tags$span(paste(nrow(modelo$dados), "pinguins analisados")),
+ 21 |         tags$span("3 espécies"), tags$span("Mesmos pontos · mesmos eixos")
+ 22 |       )
+ 23 |     ),
+ 24 |     tabsetPanel(id = "aba", type = "pills",
+ 25 |       tabPanel("Animação", value = "animacao",
+ 26 |         tags$section(class = "painel",
+ 27 |           tags$div(class = "titulo-painel",
+ 28 |             tags$h2("Uma reta geral. Três relações diferentes."),
+ 29 |             tags$p("Comprimento e profundidade do bico: correlação geral e por espécie.")
+ 30 |           ),
+ 31 |           uiOutput("estado_transicao"),
+ 32 |           plotOutput("grafico_transformacao", height = "440px"),
+ 33 |           tags$div(class = "controle-slider",
+ 34 |             sliderInput("quadro", "Avançar ou voltar na animação",
+ 35 |               min = 1, max = length(sequencia_animacao()), value = 1, step = 1,
+ 36 |               width = "100%", animate = animationOptions(interval = 1000 / 12, loop = FALSE)),
+ 37 |             textOutput("posicao_animacao")
+ 38 |           ),
+ 39 |           tags$p(class = "nota", "Arraste o controle para frente ou para trás. Os pontos e os eixos permanecem fixos.")
+ 40 |         )
+ 41 |       ),
+ 42 |       tabPanel("Explore as duas leituras", value = "explorar",
+ 43 |         tags$section(class = "painel explorador",
+ 44 |           tags$div(class = "titulo-painel",
+ 45 |             tags$h2("Qual comparação estamos fazendo?"),
+ 46 |             radioButtons("modo", NULL,
+ 47 |                          choices = c("Todos misturados" = "geral", "Separar por espécie" = "especies"),
+ 48 |                          selected = "geral", inline = TRUE)
+ 49 |           ),
+ 50 |           uiOutput("metricas"),
+ 51 |           plotOutput("grafico", height = "480px"),
+ 52 |           uiOutput("interpretacao")
+ 53 |         )
+ 54 |       ),
+ 55 |       tabPanel("O que isso significa?", value = "explicacao",
+ 56 |         tags$section(class = "painel explicacao",
+ 57 |           tags$h2("A conta está certa. O contexto estava escondido."),
+ 58 |           tags$p("Ao misturar as espécies, a reta geral combina diferenças entre grupos com as relações dentro de cada grupo. Revelar a espécie muda a pergunta que fazemos aos mesmos dados."),
+ 59 |           tags$h3("O que foi comparado"),
+ 60 |           tags$p("Comprimento e profundidade do bico, ambos em milímetros. Cada ponto é um pinguim e cada reta é um ajuste linear."),
+ 61 |           tags$h3("O que não podemos concluir"),
+ 62 |           tags$p("Correlação não demonstra causalidade. As retas descrevem associações nesta amostra; não afirmam que mudar uma medida faria a outra mudar."),
+ 63 |           tags$h3("Dados ausentes"),
+ 64 |           tags$p(paste0("A base tem 344 registros. Foram excluídos somente ", modelo$excluidos,
+ 65 |                         " registros sem as duas medidas necessárias. Espécie, coordenadas e amostra são as mesmas nas duas leituras.")),
+ 66 |           tags$h3("Fonte"),
+ 67 |           tags$p("Palmer Penguins, dados coletados entre 2007 e 2009. Cópia incluída a partir de datasets::penguins do R 4.5.2, derivada dos dados de Gorman, Williams e Fraser. Dados disponibilizados sob CC0."),
+ 68 |           tags$a("Documentação da base no R", href = "https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/penguins.html", target = "_blank", rel = "noopener")
+ 69 |         )
+ 70 |       )
+ 71 |     ),
+ 72 |     tags$footer("Protótipo didático · Dados reais · Associação não é causalidade")
+ 73 |   )
+ 74 | )
+ 75 |
+ 76 | server &lt;- function(input, output, session) {
+ 77 |   quadro_atual &lt;- reactive({
+ 78 |     if (is.null(input$quadro)) 1L else as.integer(input$quadro)
+ 79 |   })
+ 80 |   estado_transformacao &lt;- reactive({
+ 81 |     estado_do_quadro(modelo, quadro_atual())
+ 82 |   })
+ 83 |   output$posicao_animacao &lt;- renderText({
+ 84 |     segundos &lt;- (quadro_atual() - 1) / 12
+ 85 |     paste0("Quadro ", quadro_atual(), " de ", length(sequencia_animacao()),
+ 86 |       " · posição no vídeo: ", formatC(segundos, format = "f", digits = 1, decimal.mark = ","), " s")
+ 87 |   })
+ 88 |   output$estado_transicao &lt;- renderUI({
+ 89 |     tags$p(class = "estado-transformacao", estado_transformacao()$rotulo)
+ 90 |   })
+ 91 |   output$grafico_transformacao &lt;- renderPlot({
+ 92 |     grafico &lt;- plotar_transformacao(modelo, estado_transformacao())
+ 93 |     # O rotulo fica em HTML responsivo para nao cortar texto no celular.
+ 94 |     grafico$layers &lt;- purrr::discard(grafico$layers, function(camada) inherits(camada$geom, "GeomText"))
+ 95 |     # No celular, reduz texto e símbolos para manter os eixos completos.
+ 96 |     if (isTRUE(session$clientData$output_grafico_transformacao_width &lt; 640)) {
+ 97 |       grafico$layers[[1]]$aes_params$size &lt;- 1.6
+ 98 |       grafico &lt;- grafico + ggplot2::theme(
+ 99 |         axis.title = ggplot2::element_text(size = 10),
+100 |         axis.text = ggplot2::element_text(size = 9),
+101 |         legend.text = ggplot2::element_text(size = 10),
+102 |         plot.margin = ggplot2::margin(10, 12, 8, 10))
+103 |     }
+104 |     grafico + ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
+105 |       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
+106 |   }, res = 110, execOnResize = TRUE)
+107 |   resumo_ativo &lt;- reactive({
+108 |     if (identical(input$modo, "especies")) {
+109 |       modelo$por_especie
+110 |     } else {
+111 |       tibble::tibble(especie = "Todos", n = nrow(modelo$dados), r = modelo$r_geral)
+112 |     }
+113 |   })
+114 |   output$metricas &lt;- renderUI({
+115 |     resumo &lt;- resumo_ativo()
+116 |     # pmap cria um cartão para cada linha do resumo, usando seus nomes de coluna.
+117 |     tags$div(class = "metricas", purrr::pmap(resumo, function(especie, n, r) {
+118 |       tags$div(class = "metrica", style = paste0("--cor:", cores_pinguins[[especie]]),
+119 |         tags$span(class = "nome-grupo", nomes_pinguins[[especie]]),
+120 |         tags$strong(paste0("r = ", formatC(r, format = "f", digits = 3, decimal.mark = ","))),
+121 |         tags$span(class = "amostra", paste(n, "observações · Pearson"))
+122 |       )
+123 |     }))
+124 |   })
+125 |   output$grafico &lt;- renderPlot({
+126 |     criar_grafico(modelo, separar = identical(input$modo, "especies")) +
+127 |       ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
+128 |       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
+129 |   }, res = 110)
+130 |   output$interpretacao &lt;- renderUI({
+131 |     if (identical(input$modo, "especies")) {
+132 |       tags$p(class = "conclusao", "Dentro de cada espécie, a associação é positiva: as duas medidas tendem a variar juntas. Os pinguins não mudaram; revelamos os grupos.")
+133 |     } else {
+134 |       tags$p(class = "conclusao", "No conjunto misturado, a associação é negativa. Esse resumo sozinho esconde o comportamento dentro das espécies.")
+135 |     }
+136 |   })
+137 | }
+138 |
+139 | shinyApp(ui = ui, server = server)</code>
       </pre>
     </details>
     <details>
@@ -291,29 +422,71 @@
 187 |   plotar_transformacao(modelo, estado)
 188 | }
 189 |
-190 | montar_animacao &lt;- function(modelo) {
-191 |   # Pausas nos extremos e movimento calculado quadro a quadro.
-192 |   progressos &lt;- c(
-193 |     rep(0, 18), # Pausa na reta geral.
-194 |     seq(0, 1, length.out = 138), # Transição até as retas por espécie.
-195 |     rep(1, 24) # Pausa no resultado final.
-196 |   )
-197 |   # imap percorre o progresso junto com o número de cada quadro.
-198 |   estados &lt;- purrr::imap(progressos, function(progresso, quadro) {
-199 |     estado &lt;- montar_transformacao(modelo, progresso)
-200 |     # A troca considera a duração total, incluindo as pausas nos extremos.
-201 |     estado$rotulos &lt;- tibble::tibble(rotulo = rotulo_correlacao(modelo,
-202 |       por_especie = quadro &gt; length(progressos) / 2))
-203 |     purrr::map(estado[c("pontos", "ramos", "referencia", "rotulos")], function(tabela) {
-204 |       dplyr::mutate(tabela, quadro = quadro)
-205 |     })
-206 |   })
-207 |   # Junta os quadros, mantendo uma tabela para cada componente do desenho.
-208 |   dados &lt;- c("pontos", "ramos", "referencia", "rotulos") |&gt;
-209 |     purrr::set_names() |&gt;
-210 |     purrr::map(function(nome) purrr::map_dfr(estados, nome))
-211 |   plotar_transformacao(modelo, dados) + gganimate::transition_manual(quadro)
-212 | }</code>
+190 | sequencia_animacao &lt;- function() {
+191 |   # A mesma sequência é usada pelo GIF e pelo slider do Shiny.
+192 |   c(rep(0, 18), seq(0, 1, length.out = 138), rep(1, 24))
+193 | }
+194 |
+195 | estado_do_quadro &lt;- function(modelo, quadro) {
+196 |   progressos &lt;- sequencia_animacao()
+197 |   if (length(quadro) != 1L || !is.finite(quadro) ||
+198 |       quadro != as.integer(quadro) || quadro &lt; 1 || quadro &gt; length(progressos)) {
+199 |     stop("Escolha um quadro válido da animação.")
+200 |   }
+201 |   estado &lt;- montar_transformacao(modelo, progressos[[quadro]])
+202 |   # A correlação troca na metade do vídeo, contando também as pausas.
+203 |   estado$rotulo &lt;- rotulo_correlacao(modelo, por_especie = quadro &gt; length(progressos) / 2)
+204 |   estado$rotulos &lt;- tibble::tibble(rotulo = estado$rotulo)
+205 |   estado
+206 | }
+207 |
+208 | montar_animacao &lt;- function(modelo) {
+209 |   estados &lt;- purrr::imap(sequencia_animacao(), function(progresso, quadro) {
+210 |     estado &lt;- estado_do_quadro(modelo, quadro)
+211 |     purrr::map(estado[c("pontos", "ramos", "referencia", "rotulos")], function(tabela) {
+212 |       dplyr::mutate(tabela, quadro = quadro)
+213 |     })
+214 |   })
+215 |   dados &lt;- c("pontos", "ramos", "referencia", "rotulos") |&gt;
+216 |     purrr::set_names() |&gt;
+217 |     purrr::map(function(nome) purrr::map_dfr(estados, nome))
+218 |   plotar_transformacao(modelo, dados) + gganimate::transition_manual(quadro)
+219 | }</code>
+      </pre>
+    </details>
+    <details>
+      <summary>gerar_animacao.R</summary>
+      <pre>
+        <code>  1 | source("preparar.R", encoding = "UTF-8")
+  2 | source("R/modelo.R", encoding = "UTF-8")
+  3 | source("R/graficos.R", encoding = "UTF-8")
+  4 |
+  5 | # Usa a mesma amostra nos gráficos geral, por espécie e em todos os quadros.
+  6 | modelo &lt;- preparar_dados(ler_pinguins())
+  7 | dir.create("www", showWarnings = FALSE)
+  8 |
+  9 | # Salva os gráficos de apoio, sem precisar abrir o aplicativo.
+ 10 | ggplot2::ggsave("www/todos.png", criar_grafico(modelo, FALSE),
+ 11 |                 width = 10, height = 6.5, dpi = 120)
+ 12 | ggplot2::ggsave("www/especies.png", criar_grafico(modelo, TRUE),
+ 13 |                 width = 10, height = 6.5, dpi = 120)
+ 14 | purrr::walk2(c(0, 0.18, 0.59, 1), c("inicio", "divisao", "meio", "fim"), function(valor, nome) {
+ 15 |   ggplot2::ggsave(paste0("www/transformacao_", nome, ".png"),
+ 16 |     criar_grafico_transformacao(modelo, valor), width = 10, height = 6.5, dpi = 120)
+ 17 | })
+ 18 |
+ 19 | # O GIF é exportado diretamente pelo gganimate; os pontos permanecem fixos.
+ 20 | animacao &lt;- gganimate::animate(
+ 21 |   montar_animacao(modelo),
+ 22 |   nframes = 180,
+ 23 |   fps = 12,
+ 24 |   width = 960,
+ 25 |   height = 640,
+ 26 |   res = 105,
+ 27 |   renderer = gganimate::gifski_renderer("www/pinguins.gif", loop = TRUE)
+ 28 | )
+ 29 | stopifnot(file.exists("www/pinguins.gif"), file.info("www/pinguins.gif")$size &gt; 1000)
+ 30 | cat("Animacao real do gganimate gerada em www/pinguins.gif\n")</code>
       </pre>
     </details>
   </body>
