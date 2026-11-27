@@ -13,7 +13,7 @@
   <body>
     <h1>Revisão do código — animação dos pinguins</h1>
     <p>Clique no nome de cada arquivo para abrir ou fechar o código completo. Somente leitura; nada é executado nesta página.</p>
-    <p>Cópia gerada em 26/11/2026 15:53 -03</p>
+    <p>Cópia gerada em 26/11/2026 20:49 -03</p>
     <details open="open">
       <summary>iniciar.R</summary>
       <pre>
@@ -98,62 +98,46 @@
  57 |           plotOutput("grafico", height = "480px"),
  58 |           uiOutput("interpretacao")
  59 |         )
- 60 |       ),
- 61 |       tabPanel("O que isso significa?", value = "explicacao",
- 62 |         tags$section(class = "painel explicacao",
- 63 |           tags$h2("A conta está certa. O contexto estava escondido."),
- 64 |           tags$p("Ao misturar as espécies, a reta geral combina diferenças entre grupos com as relações dentro de cada grupo. Revelar a espécie muda a pergunta que fazemos aos mesmos dados."),
- 65 |           tags$h3("O que foi comparado"),
- 66 |           tags$p("Comprimento e profundidade do bico, ambos em milímetros. Cada ponto é um pinguim e cada reta é um ajuste linear."),
- 67 |           tags$h3("O que não podemos concluir"),
- 68 |           tags$p("Correlação não demonstra causalidade. As retas descrevem associações nesta amostra; não afirmam que mudar uma medida faria a outra mudar."),
- 69 |           tags$h3("Dados ausentes"),
- 70 |           tags$p(paste0("A base tem 344 registros. Foram excluídos somente ", modelo$excluidos,
- 71 |                         " registros sem as duas medidas necessárias. Espécie, coordenadas e amostra são as mesmas nas duas leituras.")),
- 72 |           tags$h3("Fonte"),
- 73 |           tags$p("Palmer Penguins, dados coletados entre 2007 e 2009. Cópia incluída a partir de datasets::penguins do R 4.5.2, derivada dos dados de Gorman, Williams e Fraser. Dados disponibilizados sob CC0."),
- 74 |           tags$a("Documentação da base no R", href = "https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/penguins.html", target = "_blank", rel = "noopener")
- 75 |         )
- 76 |       )
- 77 |     ),
- 78 |     tags$footer("Protótipo didático · Dados reais · Associação não é causalidade")
- 79 |   )
- 80 | )
- 81 |
- 82 | server &lt;- function(input, output, session) {
- 83 |   resumo_ativo &lt;- reactive({
- 84 |     if (identical(input$modo, "especies")) {
- 85 |       modelo$por_especie
- 86 |     } else {
- 87 |       tibble::tibble(especie = "Todos", n = nrow(modelo$dados), r = modelo$r_geral)
- 88 |     }
- 89 |   })
- 90 |   output$metricas &lt;- renderUI({
- 91 |     resumo &lt;- resumo_ativo()
- 92 |     # pmap cria um cartão para cada linha do resumo, usando seus nomes de coluna.
- 93 |     tags$div(class = "metricas", purrr::pmap(resumo, function(especie, n, r) {
- 94 |       tags$div(class = "metrica", style = paste0("--cor:", cores_pinguins[[especie]]),
- 95 |         tags$span(class = "nome-grupo", nomes_pinguins[[especie]]),
- 96 |         tags$strong(paste0("r = ", formatC(r, format = "f", digits = 3, decimal.mark = ","))),
- 97 |         tags$span(class = "amostra", paste(n, "observações · Pearson"))
- 98 |       )
- 99 |     }))
-100 |   })
-101 |   output$grafico &lt;- renderPlot({
-102 |     criar_grafico(modelo, separar = identical(input$modo, "especies")) +
-103 |       ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
-104 |       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
-105 |   }, res = 110)
-106 |   output$interpretacao &lt;- renderUI({
-107 |     if (identical(input$modo, "especies")) {
-108 |       tags$p(class = "conclusao", "Dentro de cada espécie, a associação é positiva: as duas medidas tendem a variar juntas. Os pinguins não mudaram; revelamos os grupos.")
-109 |     } else {
-110 |       tags$p(class = "conclusao", "No conjunto misturado, a associação é negativa. Esse resumo sozinho esconde o comportamento dentro das espécies.")
-111 |     }
-112 |   })
-113 | }
-114 |
-115 | shinyApp(ui = ui, server = server)</code>
+ 60 |       )
+ 61 |     ),
+ 62 |     tags$footer("Protótipo didático · Dados reais · Associação não é causalidade")
+ 63 |   )
+ 64 | )
+ 65 |
+ 66 | server &lt;- function(input, output, session) {
+ 67 |   resumo_ativo &lt;- reactive({
+ 68 |     if (identical(input$modo, "especies")) {
+ 69 |       modelo$por_especie
+ 70 |     } else {
+ 71 |       tibble::tibble(especie = "Todos", n = nrow(modelo$dados), r = modelo$r_geral)
+ 72 |     }
+ 73 |   })
+ 74 |   output$metricas &lt;- renderUI({
+ 75 |     resumo &lt;- resumo_ativo()
+ 76 |     # pmap cria um cartão para cada linha do resumo, usando seus nomes de coluna.
+ 77 |     tags$div(class = "metricas", purrr::pmap(resumo, function(especie, n, r) {
+ 78 |       tags$div(class = "metrica", style = paste0("--cor:", cores_pinguins[[especie]]),
+ 79 |         tags$span(class = "nome-grupo", nomes_pinguins[[especie]]),
+ 80 |         tags$strong(paste0("r = ", formatC(r, format = "f", digits = 3, decimal.mark = ","))),
+ 81 |         tags$span(class = "amostra", paste(n, "observações · Pearson"))
+ 82 |       )
+ 83 |     }))
+ 84 |   })
+ 85 |   output$grafico &lt;- renderPlot({
+ 86 |     criar_grafico(modelo, separar = identical(input$modo, "especies")) +
+ 87 |       ggplot2::labs(title = NULL, subtitle = NULL, caption = NULL) +
+ 88 |       ggplot2::guides(colour = ggplot2::guide_legend(nrow = 2, byrow = TRUE))
+ 89 |   }, res = 110)
+ 90 |   output$interpretacao &lt;- renderUI({
+ 91 |     if (identical(input$modo, "especies")) {
+ 92 |       tags$p(class = "conclusao", "Dentro de cada espécie, a associação é positiva: as duas medidas tendem a variar juntas. Os pinguins não mudaram; revelamos os grupos.")
+ 93 |     } else {
+ 94 |       tags$p(class = "conclusao", "No conjunto misturado, a associação é negativa. Esse resumo sozinho esconde o comportamento dentro das espécies.")
+ 95 |     }
+ 96 |   })
+ 97 | }
+ 98 |
+ 99 | shinyApp(ui = ui, server = server)</code>
       </pre>
     </details>
     <details>

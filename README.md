@@ -4,6 +4,18 @@ Animação em R que compara a correlação entre comprimento e profundidade do b
 
 A análise utiliza grupos já conhecidos pelas espécies, não um algoritmo de clustering.
 
+## Aplicativo
+
+**[Abrir o Shiny no navegador](https://heitorxr.github.io/bicos-de-pinguins-animacao/)**
+
+O aplicativo roda no navegador, sem instalação de R. O primeiro carregamento pode levar mais tempo.
+
+Para executar a cópia local, na pasta do projeto:
+
+```r
+source("iniciar.R", encoding = "UTF-8")
+```
+
 ## Materiais
 
 - [Animação em MP4](pinguins_movimento_continuo.mp4)

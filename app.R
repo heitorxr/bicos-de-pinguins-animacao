@@ -57,22 +57,6 @@ ui <- fluidPage(
           plotOutput("grafico", height = "480px"),
           uiOutput("interpretacao")
         )
-      ),
-      tabPanel("O que isso significa?", value = "explicacao",
-        tags$section(class = "painel explicacao",
-          tags$h2("A conta está certa. O contexto estava escondido."),
-          tags$p("Ao misturar as espécies, a reta geral combina diferenças entre grupos com as relações dentro de cada grupo. Revelar a espécie muda a pergunta que fazemos aos mesmos dados."),
-          tags$h3("O que foi comparado"),
-          tags$p("Comprimento e profundidade do bico, ambos em milímetros. Cada ponto é um pinguim e cada reta é um ajuste linear."),
-          tags$h3("O que não podemos concluir"),
-          tags$p("Correlação não demonstra causalidade. As retas descrevem associações nesta amostra; não afirmam que mudar uma medida faria a outra mudar."),
-          tags$h3("Dados ausentes"),
-          tags$p(paste0("A base tem 344 registros. Foram excluídos somente ", modelo$excluidos,
-                        " registros sem as duas medidas necessárias. Espécie, coordenadas e amostra são as mesmas nas duas leituras.")),
-          tags$h3("Fonte"),
-          tags$p("Palmer Penguins, dados coletados entre 2007 e 2009. Cópia incluída a partir de datasets::penguins do R 4.5.2, derivada dos dados de Gorman, Williams e Fraser. Dados disponibilizados sob CC0."),
-          tags$a("Documentação da base no R", href = "https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/penguins.html", target = "_blank", rel = "noopener")
-        )
       )
     ),
     tags$footer("Protótipo didático · Dados reais · Associação não é causalidade")

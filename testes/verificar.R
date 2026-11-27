@@ -37,4 +37,7 @@ html <- paste(pagina$head, pagina$html)
 stopifnot(grepl('data-manifesto=', html, fixed = TRUE),
           grepl('quadros.js', html, fixed = TRUE),
           !grepl('id="reproducao"', html, fixed = TRUE))
+stopifnot(!grepl("O que isso significa?", html, fixed = TRUE),
+          grepl('data-value="animacao"', html, fixed = TRUE),
+          grepl('data-value="explorar"', html, fixed = TRUE))
 cat("OK: dados preservados, quadros locais, rótulos e abas reativas.\n")
