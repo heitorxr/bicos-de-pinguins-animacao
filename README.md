@@ -13,24 +13,25 @@ O aplicativo roda no navegador, sem instalação de R. O primeiro carregamento p
 Para executar a cópia local, na pasta do projeto:
 
 ```r
-source("iniciar.R", encoding = "UTF-8")
+source("app.R", encoding = "UTF-8")
+iniciar()
 ```
 
 ## Materiais
 
 - [Animação em MP4](pinguins_movimento_continuo.mp4)
-- [Apresentação em PDF](roteiro/paginas_de_apoio_cores_conferidas.pdf)
 
 ## Código
 
 - `R/modelo.R`: preparação dos dados e correlações.
 - `R/graficos.R`: gráficos e quadros da animação.
-- `gerar_animacao.R`: exportação do GIF.
+- `app.R`: aplicativo, preparação e exportação do GIF e do site.
 
 Para gerar novamente o GIF, execute no R, a partir da pasta do projeto:
 
 ```r
-source("gerar_animacao.R", encoding = "UTF-8")
+source("app.R", encoding = "UTF-8")
+gerar_animacao()
 ```
 
 A primeira execução pode instalar os pacotes necessários na pasta `.biblioteca`.
@@ -39,4 +40,4 @@ A primeira execução pode instalar os pacotes necessários na pasta `.bibliotec
 
 Dados: Palmer Penguins. Ilustrações: Allison Horst (@allison_horst).
 
-Detalhes em `dados/FONTE.txt` e `roteiro/fontes_cores_conferidas.md`.
+Detalhes em `dados/FONTE.txt`.
