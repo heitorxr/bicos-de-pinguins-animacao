@@ -20,7 +20,6 @@ source("iniciar.R", encoding = "UTF-8")
 
 - [Animação em MP4](pinguins_movimento_continuo.mp4)
 - [Apresentação em PDF](roteiro/paginas_de_apoio_cores_conferidas.pdf)
-- [Revisor do código — HTML para abrir localmente](Revisao-Codigo-Pinguins.html)
 
 ## Código
 

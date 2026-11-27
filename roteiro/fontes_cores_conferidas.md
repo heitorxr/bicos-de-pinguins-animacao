@@ -32,6 +32,6 @@ A fonte da paleta é `cores_pinguins`, em `R/graficos.R`:
 - Chinstrap: `#0072B2`.
 - Gentoo: `#00856A`.
 
-Os nomes e os fundos das espécies usam esses códigos. As telas finais estão em `apoio_antes_cores_conferidas.png` e `apoio_depois_cores_conferidas.png`, reunidas em `paginas_de_apoio_cores_conferidas.pdf`.
+Os nomes e os fundos das espécies usam esses códigos. As telas finais estão reunidas em `paginas_de_apoio_cores_conferidas.pdf`.
 
 Os originais, geradores, versões intermediárias e relatórios de conferência foram preservados em arquivo local fora do Git.

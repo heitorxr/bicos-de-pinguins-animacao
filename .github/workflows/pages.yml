@@ -33,13 +33,10 @@ jobs:
             any::tibble
             any::readr
             any::jsonlite
-            any::gganimate
-            any::testthat
             any::shinylive@0.5.0
-      - name: Verificar e gerar o site
+      - name: Gerar site
         shell: Rscript {0}
         run: |
-          source('testes/verificar.R', encoding = 'UTF-8')
           source('gerar_site.R', encoding = 'UTF-8')
       - uses: actions/upload-pages-artifact@v3
         with:
